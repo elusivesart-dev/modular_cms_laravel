@@ -1,44 +1,60 @@
 # История на промените
 
-Всички значими промени по този проект се документират в този файл.
+Всички значими промени по проекта се документират в този файл.
+
+Форматът следва семпла и ясна структура по версии:
+- Добавено
+- Променено
+- Поправено
+- Сигурност
+
+---
+
+## [1.0.1] - 2026-04-05
+
+### Добавено
+- Медия модул за централизирано управление на файлове
+
+### Променено
+- Актуализирана проектна история с отразяване на завършения Медия модул
 
 ---
 
 ## [1.0.0] - 2026-03-30
 
 ### Добавено
-- Начално ядро на модулната CMS система (Laravel 12, PHP 8.2)
-- Модулна система с регистър, loader и lifecycle
-- RBAC система (роли, права, присвояване)
+- Начално ядро на модулната CMS система върху Laravel 12 и PHP 8.2
+- Модулна система с регистър, loader и lifecycle управление
+- RBAC система за роли, права и присвоявания
 - Интеграция на event система
-- Ядро за локализация (езици, смяна, регистър)
-- Система за теми (админ + публична част)
+- Ядро за локализация с езици, смяна на език и регистър
+- Система за теми за админ и публична част
 - Settings модул с групирани настройки
-- Audit лог модул със следене на събития
-- Потребителски модул (регистрация, вход, профил, верификация)
+- Audit Log модул със следене на събития
+- Потребителски модул с регистрация, вход, профил и имейл верификация
 
 ### Добавено (Админ табло)
 - Админ дашборд
-- Статистически карти:
-  - Брой модули
-  - Брой потребители
-  - Брой теми
-  - Брой езици
-- Последни действия (интеграция с Audit Log)
+- Статистически карти за:
+  - брой модули
+  - брой потребители
+  - брой теми
+  - брой езици
+- Секция за последни действия с интеграция към Audit Log
 - Кликаеми карти с навигация
 
 ### Променено
-- Админ layout-а е преработен с динамичен потребител
-- Подобрен language switcher (UI + размер)
+- Преработен админ layout с динамичен потребителски контекст
+- Подобрен language switcher в интерфейса
 - Навигацията е съобразена с RBAC
-- Settings UI интегриран с Localization
+- Settings UI е интегриран с Localization
 
 ### Поправено
-- Аватари (storage + fallback)
-- Връзка actor в audit log
+- Аватари: storage интеграция и fallback поведение
+- Връзка `actor` в Audit Log
 - Проблеми с language dropdown
-- Роутинг проблеми
-- Премахнати хардкод текстове → localization
+- Роутинг несъответствия
+- Премахнати хардкод текстове чрез localization
 
 ### Сигурност
 - CSRF защита
@@ -51,81 +67,9 @@
 
 ### Планирани
 - Модул за управление на навигация
-- Медия модул (централизирани файлове)
+- Медия модул: допълнително разширяване
 - Модул за страници
-- Лицензиране (домейн + ключ)
+- Лицензираща система с домейн и ключ
 - Marketplace за модули
-- Разширяване на API
+- Разширяване на API слоя
 - Оптимизации на производителността
-
-## [1.0.1] - 2026-04-05
-- Медия модул (централизирани файлове) - изпълнен
-
----
-
----
-
-# Changelog
-
-All notable changes to this project will be documented in this file.
-
----
-
-## [1.0.0] - 2026-03-30
-
-### Added
-- Initial modular CMS core (Laravel 12, PHP 8.2)
-- Module system with registry, loader and lifecycle
-- RBAC system (roles, permissions, assignments)
-- Event system integration
-- Localization core (languages, switching, registry)
-- Theme system (admin + public themes)
-- Settings module with grouped configuration
-- Audit log module with event tracking
-- User module (registration, auth, profile, email verification)
-
-### Added (Admin Dashboard)
-- Dashboard page (admin)
-- Statistics cards:
-  - Modules count
-  - Users count
-  - Themes count
-  - Languages count
-- Recent activity widget (Audit Log integration)
-- Clickable cards with navigation
-
-### Changed
-- Admin layout refactored to dynamic user context
-- Language switcher improved (UI + dropdown sizing)
-- Navigation aligned with RBAC permissions
-- Settings UI integrated with Localization
-
-### Fixed
-- Avatar rendering (storage + fallback support)
-- Audit log actor resolution
-- Language dropdown UI issues
-- Route inconsistencies
-- Hardcoded strings replaced with localization
-
-### Security
-- CSRF protection enforced
-- RBAC permission checks applied in navigation and routes
-- Input validation aligned with Laravel standards
-
----
-
-## [Unreleased]
-
-### Planned
-- Navigation Manager module
-- Media module (centralized uploads)
-- Pages module (content engine)
-- Licensing system (domain + key validation)
-- Marketplace for modules
-- API system expansion
-- Performance optimizations
-
-## [1.0.1] - 2026-04-05
-- Media module (centralized uploads) - Done!
----
-

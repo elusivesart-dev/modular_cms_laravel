@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace Modules\Roles\Application\Providers;
 
+use App\Core\RBAC\Contracts\RoleCatalogInterface;
+use App\Core\RBAC\Contracts\RoleSubjectServiceInterface;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Modules\Roles\Application\Http\Middleware\RoleMiddleware;
 use Modules\Roles\Application\Policies\RolePolicy;
+use Modules\Roles\Application\Services\CoreRoleCatalogService;
+use Modules\Roles\Application\Services\CoreRoleSubjectService;
 use Modules\Roles\Domain\Contracts\RoleAssignmentRepositoryInterface;
 use Modules\Roles\Domain\Contracts\RoleRepositoryInterface;
 use Modules\Roles\Domain\Services\RoleAssignmentService;
@@ -25,6 +29,10 @@ final class RolesServiceProvider extends ServiceProvider
         $this->app->singleton(RoleRepositoryInterface::class, EloquentRoleRepository::class);
         $this->app->singleton(RoleAssignmentRepositoryInterface::class, EloquentRoleAssignmentRepository::class);
         $this->app->singleton(RoleAssignmentService::class);
+        $this->app->singleton(RoleSubjectServiceInterface::class, CoreRoleSubjectService::class);
+        $this->app->singleton(CoreRoleSubjectService::class);
+        $this->app->singleton(RoleCatalogInterface::class, CoreRoleCatalogService::class);
+        $this->app->singleton(CoreRoleCatalogService::class);
     }
 
     public function boot(): void

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Users\Application\Providers;
 
+use App\Core\Auth\Contracts\AuthenticatableUserProviderInterface;
 use App\Core\Installer\Contracts\AdminCreatorInterface;
 use Illuminate\Auth\EloquentUserProvider;
 use Illuminate\Support\Facades\Gate;
@@ -13,6 +14,7 @@ use Modules\Users\Application\Policies\UserPolicy;
 use Modules\Users\Application\Services\InstallerAdminCreator;
 use Modules\Users\Application\Services\UserService;
 use Modules\Users\Domain\Contracts\UserRepositoryInterface;
+use Modules\Users\Infrastructure\Auth\UserAuthenticatableProvider;
 use Modules\Users\Infrastructure\Models\User;
 use Modules\Users\Infrastructure\Repositories\UserRepository;
 
@@ -23,6 +25,8 @@ final class UsersServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__ . '/../../Config/users.php', 'users');
 
         $this->app->singleton(UserRepositoryInterface::class, UserRepository::class);
+        $this->app->singleton(AuthenticatableUserProviderInterface::class, UserAuthenticatableProvider::class);
+        $this->app->singleton(UserAuthenticatableProvider::class);
         $this->app->singleton(UserServiceInterface::class, UserService::class);
         $this->app->singleton(UserService::class);
         $this->app->bind(AdminCreatorInterface::class, InstallerAdminCreator::class);

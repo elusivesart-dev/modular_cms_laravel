@@ -1,8 +1,6 @@
 {
   "name": "Auth",
   "version": "1.0.0",
-  "dependencies": [
-    "Users"
-  ],
+  "dependencies": [],
   "provider": "Modules\\Auth\\Application\\Providers\\AuthServiceProvider"
 }

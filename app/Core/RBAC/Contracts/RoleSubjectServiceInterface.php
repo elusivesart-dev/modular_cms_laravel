@@ -6,7 +6,7 @@ namespace App\Core\RBAC\Contracts;
 
 use Illuminate\Support\Collection;
 
-interface RoleManagerInterface
+interface RoleSubjectServiceInterface
 {
     public function assignRoleToSubject(string $roleSlug, string $subjectType, int|string $subjectId): void;
 

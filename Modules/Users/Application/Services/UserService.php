@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\Users\Application\Services;
 
+use App\Core\Database\Contracts\TransactionManagerInterface;
 use App\Core\Events\Bus\EventBus;
 use App\Core\RBAC\Contracts\RoleManagerInterface;
 use DomainException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\DB;
-use Modules\Roles\Domain\Contracts\RoleAssignmentRepositoryInterface;
-use Modules\Roles\Domain\Contracts\RoleRepositoryInterface;
 use Modules\Users\Application\Contracts\UserServiceInterface;
 use Modules\Users\Domain\Contracts\UserRepositoryInterface;
 use Modules\Users\Domain\DTOs\CreateUserData;
@@ -27,8 +25,7 @@ final class UserService implements UserServiceInterface
         private readonly UserRepositoryInterface $users,
         private readonly EventBus $eventBus,
         private readonly RoleManagerInterface $roles,
-        private readonly RoleRepositoryInterface $roleRepository,
-        private readonly RoleAssignmentRepositoryInterface $roleAssignments,
+        private readonly TransactionManagerInterface $transactions,
     ) {
     }
 
@@ -38,7 +35,7 @@ final class UserService implements UserServiceInterface
             throw UserAlreadyExistsException::forEmail($data->email);
         }
 
-        return DB::transaction(function () use ($data): User {
+        return $this->transactions->transaction(function () use ($data): User {
             $user = $this->users->create($data->toArray());
 
             $this->eventBus->emit(new UserRegisteredEvent(
@@ -54,7 +51,7 @@ final class UserService implements UserServiceInterface
 
     public function update(User $user, array $data): User
     {
-        return DB::transaction(function () use ($user, $data): User {
+        return $this->transactions->transaction(function () use ($user, $data): User {
             $updated = $this->users->update($user, $data);
 
             event(new UserUpdatedEvent($updated));
@@ -71,7 +68,7 @@ final class UserService implements UserServiceInterface
         $name = (string) $user->name;
         $email = (string) $user->email;
 
-        return DB::transaction(function () use ($user, $userId, $name, $email): bool {
+        return $this->transactions->transaction(function () use ($user, $userId, $name, $email): bool {
             $deleted = $this->users->delete($user);
 
             if ($deleted) {
@@ -103,13 +100,13 @@ final class UserService implements UserServiceInterface
             return;
         }
 
-        $superAdminRole = $this->roleRepository->findBySlug('super-admin');
+        $subjectsCount = $this->roles->countSubjectsForRole('super-admin');
 
-        if ($superAdminRole === null) {
+        if ($subjectsCount === null) {
             return;
         }
 
-        if ($this->roleAssignments->countSubjectsForRole($superAdminRole) <= 1) {
+        if ($subjectsCount <= 1) {
             throw new DomainException(__('users::users.exceptions.last_super_admin_cannot_be_deleted'));
         }
     }

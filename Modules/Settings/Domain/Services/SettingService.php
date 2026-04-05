@@ -12,6 +12,11 @@ use Modules\Settings\Domain\ValueObjects\SettingGroup;
 
 final readonly class SettingService
 {
+    private const HIDDEN_EDITABLE_KEYS = [
+        'system.theme.public.active',
+        'system.theme.admin.active',
+    ];
+
     public function __construct(
         private SettingRepositoryInterface $settings,
     ) {
@@ -26,7 +31,8 @@ final readonly class SettingService
     {
         return $this->settings->getDistinctGroups()
             ->map(function (string $group): array {
-                $items = $this->settings->getByGroup($group);
+                $items = $this->settings->getByGroup($group)
+                    ->reject(fn ($setting): bool => $this->isHiddenEditableKey((string) $setting->key));
 
                 return [
                     'group' => $group,
@@ -42,7 +48,9 @@ final readonly class SettingService
     {
         new SettingGroup($group);
 
-        return $this->settings->getByGroup($group);
+        return $this->settings->getByGroup($group)
+            ->reject(fn ($setting): bool => $this->isHiddenEditableKey((string) $setting->key))
+            ->values();
     }
 
     public function updateGroup(array $payload): void
@@ -51,7 +59,9 @@ final readonly class SettingService
 
         new SettingGroup($data->group);
 
-        $currentSettings = $this->settings->getByGroup($data->group)->keyBy('key');
+        $currentSettings = $this->settings->getByGroup($data->group)
+            ->reject(fn ($setting): bool => $this->isHiddenEditableKey((string) $setting->key))
+            ->keyBy('key');
 
         $normalizedValues = [];
 
@@ -91,5 +101,10 @@ final readonly class SettingService
     private function groupDescription(string $group): string
     {
         return __('settings::settings.groups.' . $group . '.description');
+    }
+
+    private function isHiddenEditableKey(string $key): bool
+    {
+        return in_array($key, self::HIDDEN_EDITABLE_KEYS, true);
     }
 }

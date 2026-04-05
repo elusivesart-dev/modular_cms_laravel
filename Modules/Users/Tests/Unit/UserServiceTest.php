@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Modules\Users\Tests\Unit;
 
+use App\Core\Database\Contracts\TransactionManagerInterface;
 use App\Core\Events\Bus\EventBus;
+use App\Core\RBAC\Contracts\RoleManagerInterface;
 use Mockery;
 use Modules\Users\Application\Services\UserService;
 use Modules\Users\Domain\DTOs\CreateUserData;
@@ -18,6 +20,8 @@ final class UserServiceTest extends TestCase
     {
         $repository = Mockery::mock(UserRepository::class);
         $eventBus = Mockery::mock(EventBus::class);
+        $roles = Mockery::mock(RoleManagerInterface::class);
+        $transactions = Mockery::mock(TransactionManagerInterface::class);
 
         $repository->shouldReceive('findByEmail')
             ->once()
@@ -36,7 +40,11 @@ final class UserServiceTest extends TestCase
 
         $eventBus->shouldReceive('emit')->once();
 
-        $service = new UserService($repository, $eventBus);
+        $transactions->shouldReceive('transaction')
+            ->once()
+            ->andReturnUsing(static fn (callable $callback): mixed => $callback());
+
+        $service = new UserService($repository, $eventBus, $roles, $transactions);
 
         $user = $service->create(new CreateUserData(
             name: 'John Doe',

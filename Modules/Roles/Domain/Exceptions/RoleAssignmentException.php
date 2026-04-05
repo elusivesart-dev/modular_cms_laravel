@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Modules\Roles\Domain\Exceptions;
 
-use RuntimeException;
+use App\Core\RBAC\Exceptions\RoleOperationException;
 
-final class RoleAssignmentException extends RuntimeException
+final class RoleAssignmentException extends RoleOperationException
 {
     public static function roleNotFound(string $roleSlug): self
     {

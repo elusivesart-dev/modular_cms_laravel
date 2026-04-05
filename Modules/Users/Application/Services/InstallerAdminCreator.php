@@ -4,20 +4,22 @@ declare(strict_types=1);
 
 namespace Modules\Users\Application\Services;
 
+use App\Core\Database\Contracts\TransactionManagerInterface;
 use App\Core\Installer\Contracts\AdminCreatorInterface;
 use App\Core\Installer\DTO\InstallData;
 use App\Core\RBAC\Contracts\RoleManagerInterface;
-use Illuminate\Support\Facades\DB;
-use Modules\Users\Domain\DTOs\CreateUserData;
+use Modules\Users\Application\Contracts\UserServiceInterface;
 use Modules\Users\Domain\Contracts\UserRepositoryInterface;
+use Modules\Users\Domain\DTOs\CreateUserData;
 use Modules\Users\Infrastructure\Models\User;
 
 final class InstallerAdminCreator implements AdminCreatorInterface
 {
     public function __construct(
-        private readonly UserService $userService,
+        private readonly UserServiceInterface $userService,
         private readonly UserRepositoryInterface $users,
         private readonly RoleManagerInterface $roles,
+        private readonly TransactionManagerInterface $transactions,
     ) {
     }
 
@@ -27,7 +29,7 @@ final class InstallerAdminCreator implements AdminCreatorInterface
             return;
         }
 
-        DB::transaction(function () use ($data): void {
+        $this->transactions->transaction(function () use ($data): void {
             $user = $this->userService->create(new CreateUserData(
                 name: $data->adminName,
                 email: $data->adminEmail,

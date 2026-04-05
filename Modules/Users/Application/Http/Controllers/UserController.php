@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Modules\Users\Application\Http\Controllers;
 
+use App\Core\RBAC\Contracts\RoleCatalogInterface;
 use App\Core\RBAC\Contracts\RoleManagerInterface;
+use App\Core\RBAC\Exceptions\RoleOperationException;
 use App\Http\Controllers\Controller;
 use DomainException;
 use Illuminate\Auth\Events\Verified;
@@ -15,8 +17,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Modules\Media\Application\Contracts\MediaServiceInterface;
-use Modules\Roles\Domain\Contracts\RoleRepositoryInterface;
-use Modules\Roles\Domain\Exceptions\RoleAssignmentException;
 use Modules\Users\Application\Contracts\UserServiceInterface;
 use Modules\Users\Application\Http\Requests\PublicRegisterUserRequest;
 use Modules\Users\Application\Http\Requests\PublicUpdateProfileRequest;
@@ -30,7 +30,7 @@ final class UserController extends Controller
     public function __construct(
         private readonly UserServiceInterface $users,
         private readonly RoleManagerInterface $roles,
-        private readonly RoleRepositoryInterface $roleRepository,
+        private readonly RoleCatalogInterface $roleCatalog,
         private readonly MediaServiceInterface $media,
     ) {
         $this->authorizeResource(User::class, 'user');
@@ -46,7 +46,7 @@ final class UserController extends Controller
     public function create(): View
     {
         return view('users::users.create', [
-            'roles' => $this->roleRepository->paginate(1000)->items(),
+            'roles' => $this->roleCatalog->listForSelection(),
         ]);
     }
 
@@ -69,7 +69,7 @@ final class UserController extends Controller
                     (int) $user->getKey(),
                 );
             });
-        } catch (RoleAssignmentException $exception) {
+        } catch (RoleOperationException $exception) {
             return back()
                 ->withInput()
                 ->withErrors([
@@ -104,7 +104,7 @@ final class UserController extends Controller
 
         return view('users::users.edit', [
             'user' => $user->load('avatarMedia'),
-            'roles' => $this->roleRepository->paginate(1000)->items(),
+            'roles' => $this->roleCatalog->listForSelection(),
             'selectedRoleSlugs' => $roles->pluck('slug')->all(),
         ]);
     }
@@ -127,7 +127,7 @@ final class UserController extends Controller
                     $payload['avatar_path'] = null;
 
                     $this->cleanupLegacyAvatarPath($user);
-                } elseif (!empty($payload['avatar_media_id'])) {
+                } elseif (! empty($payload['avatar_media_id'])) {
                     $payload['avatar_path'] = null;
 
                     $this->cleanupLegacyAvatarPath($user);
@@ -141,7 +141,7 @@ final class UserController extends Controller
                     (int) $user->getKey(),
                 );
             });
-        } catch (RoleAssignmentException $exception) {
+        } catch (RoleOperationException $exception) {
             return back()
                 ->withInput()
                 ->withErrors([
@@ -335,7 +335,7 @@ final class UserController extends Controller
 
     private function cleanupLegacyAvatarPath(User $user): void
     {
-        if (!empty($user->avatar_path) && Storage::disk('public')->exists($user->avatar_path)) {
+        if (! empty($user->avatar_path) && Storage::disk('public')->exists($user->avatar_path)) {
             Storage::disk('public')->delete($user->avatar_path);
         }
     }
