@@ -1,0 +1,185 @@
+:root {
+    --public-bg: #f4f7fb;
+    --public-surface: #ffffff;
+    --public-border: #e6ebf2;
+    --public-text: #1f2937;
+    --public-muted: #6b7280;
+    --public-primary: #0d6efd;
+    --public-dark: #0f172a;
+    --public-navbar: linear-gradient(135deg, #0f172a 0%, #1d4ed8 100%);
+    --public-footer: #0f172a;
+    --public-radius: 1rem;
+    --public-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+html,
+body {
+    min-height: 100%;
+}
+
+body.public-theme-body {
+    background: var(--public-bg);
+    color: var(--public-text);
+    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.public-navbar {
+    background: var(--public-navbar);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+}
+
+.public-navbar .navbar-brand,
+.public-navbar .nav-link,
+.public-navbar .navbar-toggler {
+    color: #ffffff;
+}
+
+.public-navbar .nav-link {
+    font-weight: 500;
+    opacity: 0.92;
+}
+
+.public-navbar .nav-link:hover,
+.public-navbar .nav-link.active {
+    opacity: 1;
+    color: #ffffff;
+}
+
+.public-search-input {
+    min-width: 220px;
+}
+
+.user-menu-btn {
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 0.45rem 0.75rem;
+    border-radius: 999px;
+}
+
+.user-menu-btn:hover,
+.user-menu-btn:focus,
+.user-menu-btn:active {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.24);
+}
+
+.public-user-avatar {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: #ffffff;
+    color: #111827;
+    font-weight: 700;
+}
+
+.public-user-avatar-fallback {
+    border: 2px solid rgba(255, 255, 255, 0.35);
+}
+
+.public-user-name {
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.public-hero {
+    background:
+        radial-gradient(circle at top right, rgba(255, 193, 7, 0.14), transparent 30%),
+        linear-gradient(135deg, #0f172a 0%, #1e3a8a 45%, #2563eb 100%);
+    color: #ffffff;
+}
+
+.hero-feature-card {
+    background: rgba(255, 255, 255, 0.96);
+    color: var(--public-text);
+    border-radius: var(--public-radius);
+    padding: 1.5rem;
+}
+
+.card,
+.form-control,
+.btn,
+.dropdown-menu,
+.alert {
+    border-radius: var(--public-radius);
+}
+
+.card {
+    border: 1px solid var(--public-border);
+    box-shadow: var(--public-shadow);
+}
+
+.post-card img,
+.object-fit-cover {
+    object-fit: cover;
+}
+
+.footer-link,
+.sidebar-link {
+    color: var(--public-muted);
+    text-decoration: none;
+}
+
+.footer-link:hover,
+.sidebar-link:hover {
+    color: var(--public-primary);
+}
+
+.public-footer {
+    background: var(--public-footer);
+    color: #ffffff;
+}
+
+.public-footer .text-muted {
+    color: rgba(255, 255, 255, 0.65) !important;
+}
+
+.public-footer .footer-link {
+    color: rgba(255, 255, 255, 0.82);
+}
+
+.public-footer .footer-link:hover {
+    color: #ffffff;
+}
+
+.content-body h2,
+.content-body h3,
+.content-body h4 {
+    margin-top: 1.75rem;
+    margin-bottom: 1rem;
+    font-weight: 700;
+}
+
+.content-body p,
+.content-body li {
+    color: var(--public-text);
+    line-height: 1.8;
+}
+
+.cms-sidebar .card-title {
+    font-weight: 700;
+}
+
+.pagination .page-link {
+    border-radius: 0.75rem;
+    margin-right: 0.35rem;
+}
+
+@media (max-width: 991.98px) {
+    .public-user-name {
+        max-width: 120px;
+    }
+
+    .public-search-input {
+        min-width: 100%;
+    }
+}

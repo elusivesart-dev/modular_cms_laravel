@@ -1,0 +1,6 @@
+{
+    "name": "Audit",
+    "version": "1.0.0",
+    "dependencies": [],
+    "provider": "Modules\\Audit\\Application\\Providers\\AuditServiceProvider"
+}

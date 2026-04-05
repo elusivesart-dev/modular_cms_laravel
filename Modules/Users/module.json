@@ -1,0 +1,6 @@
+{
+    "name": "Users",
+    "version": "1.0.0",
+    "dependencies": [],
+    "provider": "Modules\\Users\\Application\\Providers\\UsersServiceProvider"
+}

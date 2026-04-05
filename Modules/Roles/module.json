@@ -1,0 +1,6 @@
+{
+    "name": "Roles",
+    "version": "1.0.0",
+    "dependencies": [],
+    "provider": "Modules\\Roles\\Application\\Providers\\RolesServiceProvider"
+}

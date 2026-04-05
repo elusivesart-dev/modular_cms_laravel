@@ -1,0 +1,6 @@
+{
+    "name": "Permissions",
+    "version": "1.0.0",
+    "dependencies": [],
+    "provider": "Modules\\Permissions\\Application\\Providers\\PermissionsServiceProvider"
+}
