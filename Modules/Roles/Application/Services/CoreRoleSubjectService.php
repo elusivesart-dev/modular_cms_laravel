@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Modules\Roles\Application\Services;
 
 use App\Core\RBAC\Contracts\RoleSubjectServiceInterface;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection;
 use Modules\Roles\Domain\Contracts\RoleAssignmentRepositoryInterface;
 use Modules\Roles\Domain\Contracts\RoleRepositoryInterface;
 use Modules\Roles\Domain\Services\RoleAssignmentService;
@@ -39,9 +39,6 @@ final class CoreRoleSubjectService implements RoleSubjectServiceInterface
         return $this->assignments->hasAnyRoleForSubject($roleSlugs, $subjectType, $subjectId);
     }
 
-    /**
-     * @return Collection<int, mixed>
-     */
     public function rolesForSubject(string $subjectType, int|string $subjectId): Collection
     {
         return $this->assignments->rolesForSubject($subjectType, $subjectId);

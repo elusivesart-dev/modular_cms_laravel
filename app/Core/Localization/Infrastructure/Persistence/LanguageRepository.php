@@ -8,6 +8,7 @@ use App\Core\Localization\Contracts\LanguageRepositoryInterface;
 use App\Core\Localization\DTO\LanguageManifestData;
 use App\Core\Localization\Models\Language;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 
 final class LanguageRepository implements LanguageRepositoryInterface
 {
@@ -16,6 +17,10 @@ final class LanguageRepository implements LanguageRepositoryInterface
      */
     public function getActive(): Collection
     {
+        if (! $this->languagesTableExists()) {
+            return collect();
+        }
+
         return Language::query()
             ->where('is_active', true)
             ->orderBy('native_name')
@@ -27,6 +32,10 @@ final class LanguageRepository implements LanguageRepositoryInterface
      */
     public function getAll(): Collection
     {
+        if (! $this->languagesTableExists()) {
+            return collect();
+        }
+
         return Language::query()
             ->orderByDesc('is_system')
             ->orderBy('native_name')
@@ -35,6 +44,10 @@ final class LanguageRepository implements LanguageRepositoryInterface
 
     public function findByCode(string $code): ?Language
     {
+        if (! $this->languagesTableExists()) {
+            return null;
+        }
+
         return Language::query()
             ->where('code', $code)
             ->first();
@@ -42,6 +55,10 @@ final class LanguageRepository implements LanguageRepositoryInterface
 
     public function findActiveByCode(string $code): ?Language
     {
+        if (! $this->languagesTableExists()) {
+            return null;
+        }
+
         return Language::query()
             ->where('code', $code)
             ->where('is_active', true)
@@ -71,5 +88,10 @@ final class LanguageRepository implements LanguageRepositoryInterface
         $language->save();
 
         return $language->refresh();
+    }
+
+    private function languagesTableExists(): bool
+    {
+        return Schema::hasTable('languages');
     }
 }

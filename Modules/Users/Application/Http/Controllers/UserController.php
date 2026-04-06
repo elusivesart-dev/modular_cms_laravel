@@ -4,34 +4,27 @@ declare(strict_types=1);
 
 namespace Modules\Users\Application\Http\Controllers;
 
-use App\Core\RBAC\Contracts\RoleCatalogInterface;
-use App\Core\RBAC\Contracts\RoleManagerInterface;
 use App\Core\RBAC\Exceptions\RoleOperationException;
 use App\Http\Controllers\Controller;
 use DomainException;
-use Illuminate\Auth\Events\Verified;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use Modules\Media\Application\Contracts\MediaServiceInterface;
+use Modules\Users\Application\Contracts\UserAdministrationWorkflowInterface;
+use Modules\Users\Application\Contracts\UserProfileWorkflowInterface;
 use Modules\Users\Application\Contracts\UserServiceInterface;
 use Modules\Users\Application\Http\Requests\PublicRegisterUserRequest;
 use Modules\Users\Application\Http\Requests\PublicUpdateProfileRequest;
 use Modules\Users\Application\Http\Requests\StoreUserRequest;
 use Modules\Users\Application\Http\Requests\UpdateUserRequest;
-use Modules\Users\Domain\DTOs\CreateUserData;
 use Modules\Users\Infrastructure\Models\User;
 
 final class UserController extends Controller
 {
     public function __construct(
         private readonly UserServiceInterface $users,
-        private readonly RoleManagerInterface $roles,
-        private readonly RoleCatalogInterface $roleCatalog,
-        private readonly MediaServiceInterface $media,
+        private readonly UserAdministrationWorkflowInterface $administration,
+        private readonly UserProfileWorkflowInterface $profiles,
     ) {
         $this->authorizeResource(User::class, 'user');
     }
@@ -46,7 +39,7 @@ final class UserController extends Controller
     public function create(): View
     {
         return view('users::users.create', [
-            'roles' => $this->roleCatalog->listForSelection(),
+            'roles' => $this->administration->availableRoles(),
         ]);
     }
 
@@ -55,20 +48,7 @@ final class UserController extends Controller
         $payload = $request->validatedPayload();
 
         try {
-            DB::transaction(function () use ($payload, &$user): void {
-                $user = $this->users->create(new CreateUserData(
-                    name: (string) $payload['name'],
-                    email: (string) $payload['email'],
-                    password: (string) $payload['password'],
-                    isActive: (bool) $payload['is_active'],
-                ));
-
-                $this->roles->syncRolesToSubject(
-                    $payload['role_slugs'] ?? [],
-                    User::class,
-                    (int) $user->getKey(),
-                );
-            });
+            $this->administration->store($payload);
         } catch (RoleOperationException $exception) {
             return back()
                 ->withInput()
@@ -84,28 +64,18 @@ final class UserController extends Controller
 
     public function show(User $user): View
     {
-        $roles = $this->roles->rolesForSubject(
-            User::class,
-            $user->getKey()
-        );
-
         return view('users::users.show', [
             'user' => $user,
-            'roles' => $roles,
+            'roles' => $this->administration->assignedRoles($user),
         ]);
     }
 
     public function edit(User $user): View
     {
-        $roles = $this->roles->rolesForSubject(
-            User::class,
-            $user->getKey()
-        );
-
         return view('users::users.edit', [
             'user' => $user->load('avatarMedia'),
-            'roles' => $this->roleCatalog->listForSelection(),
-            'selectedRoleSlugs' => $roles->pluck('slug')->all(),
+            'roles' => $this->administration->availableRoles(),
+            'selectedRoleSlugs' => $this->administration->selectedRoleSlugs($user),
         ]);
     }
 
@@ -114,33 +84,12 @@ final class UserController extends Controller
         $payload = $request->validatedPayload();
 
         try {
-            DB::transaction(function () use ($user, $payload, $request): void {
-                if ($request->hasFile('avatar')) {
-                    $uploadedMedia = $this->media->upload(
-                        file: $request->file('avatar'),
-                        uploadedBy: $request->user() !== null ? (int) $request->user()->getAuthIdentifier() : null,
-                        title: (string) $user->name,
-                        altText: (string) $user->name,
-                    );
-
-                    $payload['avatar_media_id'] = (int) $uploadedMedia->getKey();
-                    $payload['avatar_path'] = null;
-
-                    $this->cleanupLegacyAvatarPath($user);
-                } elseif (! empty($payload['avatar_media_id'])) {
-                    $payload['avatar_path'] = null;
-
-                    $this->cleanupLegacyAvatarPath($user);
-                }
-
-                $this->users->update($user, $payload);
-
-                $this->roles->syncRolesToSubject(
-                    $payload['role_slugs'] ?? [],
-                    User::class,
-                    (int) $user->getKey(),
-                );
-            });
+            $this->administration->update(
+                user: $user,
+                payload: $payload,
+                avatar: $request->file('avatar'),
+                uploadedBy: $request->user() !== null ? (int) $request->user()->getAuthIdentifier() : null,
+            );
         } catch (RoleOperationException $exception) {
             return back()
                 ->withInput()
@@ -192,22 +141,7 @@ final class UserController extends Controller
 
     public function register(PublicRegisterUserRequest $request): RedirectResponse
     {
-        $payload = $request->validatedPayload();
-
-        $user = $this->users->create(new CreateUserData(
-            name: $payload['name'],
-            email: $payload['email'],
-            password: $payload['password'],
-            isActive: true,
-        ));
-
-        $slug = $this->makeUniqueSlug($payload['name'], (int) $user->getKey());
-
-        $this->users->update($user, [
-            'slug' => $slug,
-        ]);
-
-        $user->sendEmailVerificationNotification();
+        $this->profiles->register($request->validatedPayload());
 
         return redirect()
             ->route('login')
@@ -250,32 +184,12 @@ final class UserController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        $payload = $request->validatedPayload();
-        $oldEmail = $user->email;
-
-        if ($request->hasFile('avatar')) {
-            $uploadedMedia = $this->media->upload(
-                file: $request->file('avatar'),
-                uploadedBy: $request->user() !== null ? (int) $request->user()->getAuthIdentifier() : null,
-                title: (string) $user->name,
-                altText: (string) $user->name,
-            );
-
-            $payload['avatar_media_id'] = (int) $uploadedMedia->getKey();
-            $payload['avatar_path'] = null;
-
-            $this->cleanupLegacyAvatarPath($user);
-        }
-
-        $this->users->update($user, $payload);
-
-        if ($oldEmail !== $payload['email']) {
-            $user->forceFill([
-                'email_verified_at' => null,
-            ])->save();
-
-            $user->sendEmailVerificationNotification();
-        }
+        $this->profiles->updateProfile(
+            user: $user,
+            payload: $request->validatedPayload(),
+            avatar: $request->file('avatar'),
+            uploadedBy: $request->user() !== null ? (int) $request->user()->getAuthIdentifier() : null,
+        );
 
         return redirect()
             ->route('profile.me')
@@ -286,57 +200,19 @@ final class UserController extends Controller
     {
         abort_unless($request->hasValidSignature(), 403);
 
-        /** @var User $user */
-        $user = User::query()->findOrFail((int) $request->route('id'));
-
-        abort_unless(
-            hash_equals(
-                (string) $request->route('hash'),
-                sha1($user->getEmailForVerification())
-            ),
-            403
+        $verified = $this->profiles->verifyEmail(
+            userId: (int) $request->route('id'),
+            hash: (string) $request->route('hash'),
         );
 
-        if ($user->hasVerifiedEmail()) {
+        if (! $verified) {
             return redirect()
                 ->route('login')
                 ->with('info', __('users::users.public.email_already_verified'));
         }
 
-        $user->markEmailAsVerified();
-        event(new Verified($user));
-
         return redirect()
             ->route('login')
             ->with('success', __('users::users.public.email_verified'));
-    }
-
-    private function makeUniqueSlug(string $name, int $ignoreUserId = 0): string
-    {
-        $baseSlug = Str::slug($name);
-        $baseSlug = $baseSlug !== '' ? $baseSlug : 'user';
-        $slug = $baseSlug;
-        $suffix = 1;
-
-        while (
-            User::query()
-                ->where('slug', $slug)
-                ->when($ignoreUserId > 0, static function ($query) use ($ignoreUserId) {
-                    $query->where('id', '!=', $ignoreUserId);
-                })
-                ->exists()
-        ) {
-            $slug = $baseSlug . '-' . $suffix;
-            $suffix++;
-        }
-
-        return $slug;
-    }
-
-    private function cleanupLegacyAvatarPath(User $user): void
-    {
-        if (! empty($user->avatar_path) && Storage::disk('public')->exists($user->avatar_path)) {
-            Storage::disk('public')->delete($user->avatar_path);
-        }
     }
 }

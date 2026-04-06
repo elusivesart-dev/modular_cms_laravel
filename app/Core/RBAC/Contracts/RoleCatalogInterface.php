@@ -11,5 +11,5 @@ interface RoleCatalogInterface
     /**
      * @return array<int, RoleOptionData>
      */
-    public function listForSelection(int $perPage = 1000): array;
+    public function all(): array;
 }

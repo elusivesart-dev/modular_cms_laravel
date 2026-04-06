@@ -24,8 +24,8 @@ final class UserService implements UserServiceInterface
     public function __construct(
         private readonly UserRepositoryInterface $users,
         private readonly EventBus $eventBus,
-        private readonly RoleManagerInterface $roles,
         private readonly TransactionManagerInterface $transactions,
+        private readonly RoleManagerInterface $roles,
     ) {
     }
 

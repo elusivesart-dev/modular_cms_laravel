@@ -38,9 +38,10 @@ final class SettingsServiceProvider extends ServiceProvider
 
         Gate::policy(Setting::class, SettingPolicy::class);
 
-        $runtimeSettingsApplier->applySystem();
+        if (! $this->app->runningUnitTests()) {
+            $runtimeSettingsApplier->applySystem();
+        }
 
         $router->aliasMiddleware('system.settings', ApplySystemSettings::class);
-        $router->pushMiddlewareToGroup('web', ApplySystemSettings::class);
     }
 }

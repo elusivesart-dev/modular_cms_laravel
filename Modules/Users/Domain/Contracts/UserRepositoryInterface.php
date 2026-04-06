@@ -19,5 +19,11 @@ interface UserRepositoryInterface
 
     public function findByEmail(string $email): ?User;
 
+    public function slugExists(string $slug, int $ignoreUserId = 0): bool;
+
+    public function clearEmailVerification(User $user): User;
+
+    public function markEmailAsVerified(User $user): User;
+
     public function paginate(int $perPage = 15): LengthAwarePaginator;
 }

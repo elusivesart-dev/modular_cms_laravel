@@ -9,9 +9,13 @@ use App\Core\Installer\Contracts\AdminCreatorInterface;
 use Illuminate\Auth\EloquentUserProvider;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use Modules\Users\Application\Contracts\UserAdministrationWorkflowInterface;
+use Modules\Users\Application\Contracts\UserProfileWorkflowInterface;
 use Modules\Users\Application\Contracts\UserServiceInterface;
 use Modules\Users\Application\Policies\UserPolicy;
 use Modules\Users\Application\Services\InstallerAdminCreator;
+use Modules\Users\Application\Services\UserAdministrationWorkflowService;
+use Modules\Users\Application\Services\UserProfileWorkflowService;
 use Modules\Users\Application\Services\UserService;
 use Modules\Users\Domain\Contracts\UserRepositoryInterface;
 use Modules\Users\Infrastructure\Auth\UserAuthenticatableProvider;
@@ -29,6 +33,10 @@ final class UsersServiceProvider extends ServiceProvider
         $this->app->singleton(UserAuthenticatableProvider::class);
         $this->app->singleton(UserServiceInterface::class, UserService::class);
         $this->app->singleton(UserService::class);
+        $this->app->singleton(UserAdministrationWorkflowInterface::class, UserAdministrationWorkflowService::class);
+        $this->app->singleton(UserAdministrationWorkflowService::class);
+        $this->app->singleton(UserProfileWorkflowInterface::class, UserProfileWorkflowService::class);
+        $this->app->singleton(UserProfileWorkflowService::class);
         $this->app->bind(AdminCreatorInterface::class, InstallerAdminCreator::class);
     }
 

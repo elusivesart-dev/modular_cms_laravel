@@ -29,10 +29,10 @@ final class RolesServiceProvider extends ServiceProvider
         $this->app->singleton(RoleRepositoryInterface::class, EloquentRoleRepository::class);
         $this->app->singleton(RoleAssignmentRepositoryInterface::class, EloquentRoleAssignmentRepository::class);
         $this->app->singleton(RoleAssignmentService::class);
-        $this->app->singleton(RoleSubjectServiceInterface::class, CoreRoleSubjectService::class);
-        $this->app->singleton(CoreRoleSubjectService::class);
         $this->app->singleton(RoleCatalogInterface::class, CoreRoleCatalogService::class);
+        $this->app->singleton(RoleSubjectServiceInterface::class, CoreRoleSubjectService::class);
         $this->app->singleton(CoreRoleCatalogService::class);
+        $this->app->singleton(CoreRoleSubjectService::class);
     }
 
     public function boot(): void

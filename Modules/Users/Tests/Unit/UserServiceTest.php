@@ -9,19 +9,19 @@ use App\Core\Events\Bus\EventBus;
 use App\Core\RBAC\Contracts\RoleManagerInterface;
 use Mockery;
 use Modules\Users\Application\Services\UserService;
+use Modules\Users\Domain\Contracts\UserRepositoryInterface;
 use Modules\Users\Domain\DTOs\CreateUserData;
 use Modules\Users\Infrastructure\Models\User;
-use Modules\Users\Infrastructure\Repositories\UserRepository;
 use Orchestra\Testbench\TestCase;
 
 final class UserServiceTest extends TestCase
 {
     public function test_user_can_be_created(): void
     {
-        $repository = Mockery::mock(UserRepository::class);
+        $repository = Mockery::mock(UserRepositoryInterface::class);
         $eventBus = Mockery::mock(EventBus::class);
-        $roles = Mockery::mock(RoleManagerInterface::class);
         $transactions = Mockery::mock(TransactionManagerInterface::class);
+        $roles = Mockery::mock(RoleManagerInterface::class);
 
         $repository->shouldReceive('findByEmail')
             ->once()
@@ -44,7 +44,7 @@ final class UserServiceTest extends TestCase
             ->once()
             ->andReturnUsing(static fn (callable $callback): mixed => $callback());
 
-        $service = new UserService($repository, $eventBus, $roles, $transactions);
+        $service = new UserService($repository, $eventBus, $transactions, $roles);
 
         $user = $service->create(new CreateUserData(
             name: 'John Doe',

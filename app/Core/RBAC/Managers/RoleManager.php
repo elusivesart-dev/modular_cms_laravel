@@ -6,7 +6,7 @@ namespace App\Core\RBAC\Managers;
 
 use App\Core\RBAC\Contracts\RoleManagerInterface;
 use App\Core\RBAC\Contracts\RoleSubjectServiceInterface;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 
 final class RoleManager implements RoleManagerInterface
@@ -36,9 +36,6 @@ final class RoleManager implements RoleManagerInterface
         return $this->subjects->hasAnyRoleForSubject($roleSlugs, $subjectType, $subjectId);
     }
 
-    /**
-     * @return Collection<int, mixed>
-     */
     public function rolesForSubject(string $subjectType, int|string $subjectId): Collection
     {
         return Cache::remember(

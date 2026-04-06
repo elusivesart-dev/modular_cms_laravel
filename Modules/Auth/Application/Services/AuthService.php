@@ -50,7 +50,6 @@ final class AuthService implements AuthServiceInterface
         Auth::login($user, $data->remember);
 
         RateLimiter::clear($key);
-
         $request->session()->regenerate();
     }
 

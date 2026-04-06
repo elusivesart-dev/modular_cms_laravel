@@ -42,6 +42,32 @@ final class UserRepository implements UserRepositoryInterface
             ->first();
     }
 
+    public function slugExists(string $slug, int $ignoreUserId = 0): bool
+    {
+        return User::query()
+            ->where('slug', $slug)
+            ->when($ignoreUserId > 0, static function ($query) use ($ignoreUserId): void {
+                $query->where('id', '!=', $ignoreUserId);
+            })
+            ->exists();
+    }
+
+    public function clearEmailVerification(User $user): User
+    {
+        $user->forceFill([
+            'email_verified_at' => null,
+        ])->save();
+
+        return $user->refresh();
+    }
+
+    public function markEmailAsVerified(User $user): User
+    {
+        $user->markEmailAsVerified();
+
+        return $user->refresh();
+    }
+
     public function paginate(int $perPage = 15): LengthAwarePaginator
     {
         return User::query()

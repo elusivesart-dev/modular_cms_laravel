@@ -7,6 +7,7 @@ namespace Modules\Settings\Infrastructure\Repositories;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
 use Modules\Settings\Domain\Contracts\SettingRepositoryInterface;
 use Modules\Settings\Domain\DTOs\SettingData;
 use Modules\Settings\Infrastructure\Models\Setting;
@@ -128,10 +129,18 @@ final class SettingRepository implements SettingRepositoryInterface
 
     public function getRuntimeSettings(): Collection
     {
+        if (! $this->settingsTableExists()) {
+            return collect();
+        }
+
         return Cache::remember(
             self::RUNTIME_CACHE_KEY,
             now()->addMinutes(30),
-            static function (): Collection {
+            function (): Collection {
+                if (! $this->settingsTableExists()) {
+                    return collect();
+                }
+
                 return Setting::query()
                     ->whereIn('key', [
                         'general.site_name',
@@ -148,10 +157,18 @@ final class SettingRepository implements SettingRepositoryInterface
 
     public function getValue(string $key, mixed $default = null): mixed
     {
+        if (! $this->settingsTableExists()) {
+            return $default;
+        }
+
         return Cache::remember(
             self::VALUE_CACHE_PREFIX . md5($key),
             now()->addMinutes(30),
             function () use ($key, $default): mixed {
+                if (! $this->settingsTableExists()) {
+                    return $default;
+                }
+
                 $setting = Setting::query()
                     ->where('key', $key)
                     ->first(['value', 'type']);
@@ -207,5 +224,10 @@ final class SettingRepository implements SettingRepositoryInterface
     private function forgetValueCache(string $key): void
     {
         Cache::forget(self::VALUE_CACHE_PREFIX . md5($key));
+    }
+
+    private function settingsTableExists(): bool
+    {
+        return Schema::hasTable('settings');
     }
 }

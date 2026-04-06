@@ -15,24 +15,16 @@ final class CoreRoleCatalogService implements RoleCatalogInterface
     ) {
     }
 
-    /**
-     * @return array<int, RoleOptionData>
-     */
-    public function listForSelection(int $perPage = 1000): array
+    public function all(): array
     {
-        $items = $this->roles->paginate($perPage)->items();
-        $result = [];
-
-        foreach ($items as $role) {
-            $result[] = new RoleOptionData(
-                id: (int) $role->getKey(),
+        return array_map(
+            static fn (object $role): RoleOptionData => new RoleOptionData(
                 name: (string) $role->name,
                 slug: (string) $role->slug,
                 description: $role->description !== null ? (string) $role->description : null,
                 isSystem: (bool) $role->is_system,
-            );
-        }
-
-        return $result;
+            ),
+            $this->roles->paginate(1000)->items(),
+        );
     }
 }
