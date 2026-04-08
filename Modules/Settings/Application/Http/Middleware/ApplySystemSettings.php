@@ -18,7 +18,7 @@ final class ApplySystemSettings
 
     public function handle(Request $request, Closure $next): Response
     {
-        $sessionLocale = $request->session()->get('locale');
+        $sessionLocale = session()->get('locale');
 
         $this->runtimeSettingsApplier->applyLocale(
             is_string($sessionLocale) ? $sessionLocale : null
