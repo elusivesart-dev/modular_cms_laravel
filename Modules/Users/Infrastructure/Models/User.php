@@ -13,9 +13,10 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Modules\Media\Infrastructure\Models\Media;
 use Modules\Users\Application\Notifications\VerifyEmailNotification;
+use Modules\Users\Domain\Contracts\UserEntityInterface;
 use Modules\Users\Infrastructure\Database\Factories\UserFactory;
 
-final class User extends Authenticatable implements MustVerifyEmailContract
+final class User extends Authenticatable implements MustVerifyEmailContract, UserEntityInterface
 {
     use HasApiTokens;
     use HasFactory;
@@ -65,7 +66,7 @@ final class User extends Authenticatable implements MustVerifyEmailContract
             return $this->avatarMedia->url;
         }
 
-        if (!empty($this->avatar_path)) {
+        if (! empty($this->avatar_path)) {
             return url('storage/' . ltrim((string) $this->avatar_path, '/'));
         }
 

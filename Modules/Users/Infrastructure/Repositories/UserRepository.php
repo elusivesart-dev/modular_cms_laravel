@@ -5,12 +5,17 @@ declare(strict_types=1);
 namespace Modules\Users\Infrastructure\Repositories;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use InvalidArgumentException;
+use Modules\Users\Domain\Contracts\UserEntityInterface;
 use Modules\Users\Domain\Contracts\UserRepositoryInterface;
 use Modules\Users\Infrastructure\Models\User;
 
 final class UserRepository implements UserRepositoryInterface
 {
-    public function create(array $data): User
+    /**
+     * @param array<string, mixed> $data
+     */
+    public function create(array $data): UserEntityInterface
     {
         /** @var User $user */
         $user = User::query()->create($data);
@@ -18,54 +23,33 @@ final class UserRepository implements UserRepositoryInterface
         return $user;
     }
 
-    public function update(User $user, array $data): User
+    /**
+     * @param array<string, mixed> $data
+     */
+    public function update(UserEntityInterface $user, array $data): UserEntityInterface
     {
-        $user->update($data);
+        $model = $this->toModel($user);
 
-        return $user->refresh();
+        $model->update($data);
+
+        return $model->refresh();
     }
 
-    public function delete(User $user): bool
+    public function delete(UserEntityInterface $user): bool
     {
-        return (bool) $user->delete();
+        return (bool) $this->toModel($user)->delete();
     }
 
-    public function findById(int $id): ?User
+    public function findById(int $id): ?UserEntityInterface
     {
         return User::query()->find($id);
     }
 
-    public function findByEmail(string $email): ?User
+    public function findByEmail(string $email): ?UserEntityInterface
     {
         return User::query()
             ->where('email', $email)
             ->first();
-    }
-
-    public function slugExists(string $slug, int $ignoreUserId = 0): bool
-    {
-        return User::query()
-            ->where('slug', $slug)
-            ->when($ignoreUserId > 0, static function ($query) use ($ignoreUserId): void {
-                $query->where('id', '!=', $ignoreUserId);
-            })
-            ->exists();
-    }
-
-    public function clearEmailVerification(User $user): User
-    {
-        $user->forceFill([
-            'email_verified_at' => null,
-        ])->save();
-
-        return $user->refresh();
-    }
-
-    public function markEmailAsVerified(User $user): User
-    {
-        $user->markEmailAsVerified();
-
-        return $user->refresh();
     }
 
     public function paginate(int $perPage = 15): LengthAwarePaginator
@@ -73,5 +57,14 @@ final class UserRepository implements UserRepositoryInterface
         return User::query()
             ->latest('id')
             ->paginate($perPage);
+    }
+
+    private function toModel(UserEntityInterface $user): User
+    {
+        if (! $user instanceof User) {
+            throw new InvalidArgumentException('Unsupported user entity implementation.');
+        }
+
+        return $user;
     }
 }
