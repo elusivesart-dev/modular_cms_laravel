@@ -2,11 +2,48 @@
 
 Всички значими промени по проекта се документират в този файл.
 
-Форматът следва семпла и ясна структура по версии:
+Формат:
 - Добавено
 - Променено
 - Поправено
 - Сигурност
+
+---
+
+## [1.1.0] - 2026-04-13
+
+### Променено
+- Рефактор на модулната архитектура за премахване на директни зависимости между модулите
+- Въвеждане на Core Contracts за комуникация между Auth, Users и RBAC
+- Пренасочване на Users и Auth логиката към Core слоевете чрез интерфейси
+- Преработка на transaction management към централен Core компонент
+- Стандартизиране на dependency flow: Module → Core → Module (без директни връзки)
+
+### Добавено
+- UserEntityInterface за стабилизиране на boundary между Application/Domain и Infrastructure
+- Workflow слой (UserAdministrationWorkflowService, UserProfileWorkflowService) като orchestration ниво
+- Ясно разделение между:
+  - Application services (business logic)
+  - Workflow services (use-case orchestration)
+
+### Подобрено
+- Runtime settings прилагане:
+  - system конфигурации се прилагат на boot ниво
+  - locale се прилага на request ниво
+- Разделяне на отговорностите в Settings runtime pipeline
+- Подобрена консистентност на DI контейнера и service binding-и
+
+### Поправено
+- Конфликти с Laravel MustVerifyEmail trait (method signatures)
+- Проблем с липсваща таблица languages в тестова среда
+- Проблеми с module loader при unit тестове
+- Route availability в тестова среда (404 → коректни отговори)
+- RBAC access проверки при feature тестове
+
+### Сигурност
+- Подсилена изолация между модулите чрез contract-based достъп
+- Ограничаване на достъпа до данни извън дефинираните boundaries
+- Подобрена консистентност при role assignment и permission enforcement
 
 ---
 
