@@ -34,9 +34,7 @@ final class UsersServiceProvider extends ServiceProvider
         $this->app->singleton(UserServiceInterface::class, UserService::class);
         $this->app->singleton(UserService::class);
         $this->app->singleton(UserAdministrationWorkflowInterface::class, UserAdministrationWorkflowService::class);
-        $this->app->singleton(UserAdministrationWorkflowService::class);
         $this->app->singleton(UserProfileWorkflowInterface::class, UserProfileWorkflowService::class);
-        $this->app->singleton(UserProfileWorkflowService::class);
         $this->app->bind(AdminCreatorInterface::class, InstallerAdminCreator::class);
     }
 

@@ -18,13 +18,15 @@ use Modules\Users\Application\Http\Requests\PublicUpdateProfileRequest;
 use Modules\Users\Application\Http\Requests\StoreUserRequest;
 use Modules\Users\Application\Http\Requests\UpdateUserRequest;
 use Modules\Users\Infrastructure\Models\User;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 final class UserController extends Controller
 {
     public function __construct(
         private readonly UserServiceInterface $users,
-        private readonly UserAdministrationWorkflowInterface $administration,
-        private readonly UserProfileWorkflowInterface $profiles,
+        private readonly UserAdministrationWorkflowInterface $administrationWorkflow,
+        private readonly UserProfileWorkflowInterface $profileWorkflow,
     ) {
         $this->authorizeResource(User::class, 'user');
     }
@@ -39,7 +41,7 @@ final class UserController extends Controller
     public function create(): View
     {
         return view('users::users.create', [
-            'roles' => $this->administration->availableRoles(),
+            'roles' => $this->administrationWorkflow->availableRoles(),
         ]);
     }
 
@@ -48,7 +50,7 @@ final class UserController extends Controller
         $payload = $request->validatedPayload();
 
         try {
-            $this->administration->store($payload);
+            $this->administrationWorkflow->store($payload);
         } catch (RoleOperationException $exception) {
             return back()
                 ->withInput()
@@ -66,7 +68,7 @@ final class UserController extends Controller
     {
         return view('users::users.show', [
             'user' => $user,
-            'roles' => $this->administration->assignedRoles($user),
+            'roles' => $this->administrationWorkflow->assignedRoles($user),
         ]);
     }
 
@@ -74,8 +76,8 @@ final class UserController extends Controller
     {
         return view('users::users.edit', [
             'user' => $user->load('avatarMedia'),
-            'roles' => $this->administration->availableRoles(),
-            'selectedRoleSlugs' => $this->administration->selectedRoleSlugs($user),
+            'roles' => $this->administrationWorkflow->availableRoles(),
+            'selectedRoleSlugs' => $this->administrationWorkflow->selectedRoleSlugs($user),
         ]);
     }
 
@@ -84,7 +86,7 @@ final class UserController extends Controller
         $payload = $request->validatedPayload();
 
         try {
-            $this->administration->update(
+            $this->administrationWorkflow->update(
                 user: $user,
                 payload: $payload,
                 avatar: $request->file('avatar'),
@@ -141,7 +143,9 @@ final class UserController extends Controller
 
     public function register(PublicRegisterUserRequest $request): RedirectResponse
     {
-        $this->profiles->register($request->validatedPayload());
+        $payload = $request->validatedPayload();
+
+        $this->profileWorkflow->register($payload);
 
         return redirect()
             ->route('login')
@@ -184,9 +188,11 @@ final class UserController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        $this->profiles->updateProfile(
+        $payload = $request->validatedPayload();
+
+        $this->profileWorkflow->updateProfile(
             user: $user,
-            payload: $request->validatedPayload(),
+            payload: $payload,
             avatar: $request->file('avatar'),
             uploadedBy: $request->user() !== null ? (int) $request->user()->getAuthIdentifier() : null,
         );
@@ -200,10 +206,14 @@ final class UserController extends Controller
     {
         abort_unless($request->hasValidSignature(), 403);
 
-        $verified = $this->profiles->verifyEmail(
-            userId: (int) $request->route('id'),
-            hash: (string) $request->route('hash'),
-        );
+        try {
+            $verified = $this->profileWorkflow->verifyEmail(
+                userId: (int) $request->route('id'),
+                hash: (string) $request->route('hash'),
+            );
+        } catch (NotFoundHttpException|AccessDeniedHttpException) {
+            abort(403);
+        }
 
         if (! $verified) {
             return redirect()
