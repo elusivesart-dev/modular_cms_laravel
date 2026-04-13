@@ -6,7 +6,7 @@ namespace Modules\Users\Application\Contracts;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
-use Modules\Users\Infrastructure\Models\User;
+use Modules\Users\Domain\Contracts\UserEntityInterface;
 
 interface UserAdministrationWorkflowInterface
 {
@@ -18,20 +18,25 @@ interface UserAdministrationWorkflowInterface
     /**
      * @return Collection<int, mixed>
      */
-    public function assignedRoles(User $user): Collection;
+    public function assignedRoles(UserEntityInterface $user): Collection;
 
     /**
      * @return array<int, string>
      */
-    public function selectedRoleSlugs(User $user): array;
+    public function selectedRoleSlugs(UserEntityInterface $user): array;
 
     /**
      * @param array<string, mixed> $payload
      */
-    public function store(array $payload): User;
+    public function store(array $payload): UserEntityInterface;
 
     /**
      * @param array<string, mixed> $payload
      */
-    public function update(User $user, array $payload, ?UploadedFile $avatar = null, ?int $uploadedBy = null): User;
+    public function update(
+        UserEntityInterface $user,
+        array $payload,
+        ?UploadedFile $avatar = null,
+        ?int $uploadedBy = null
+    ): UserEntityInterface;
 }

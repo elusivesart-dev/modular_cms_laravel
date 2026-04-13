@@ -7,12 +7,14 @@ namespace Modules\Users\Application\Services;
 use App\Core\Database\Contracts\TransactionManagerInterface;
 use App\Core\RBAC\Contracts\RoleCatalogInterface;
 use App\Core\RBAC\Contracts\RoleManagerInterface;
+use DomainException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Modules\Media\Application\Contracts\MediaServiceInterface;
 use Modules\Users\Application\Contracts\UserAdministrationWorkflowInterface;
 use Modules\Users\Application\Contracts\UserServiceInterface;
+use Modules\Users\Domain\Contracts\UserEntityInterface;
 use Modules\Users\Domain\DTOs\CreateUserData;
 use Modules\Users\Infrastructure\Models\User;
 
@@ -32,12 +34,12 @@ final class UserAdministrationWorkflowService implements UserAdministrationWorkf
         return $this->roleCatalog->all();
     }
 
-    public function assignedRoles(User $user): Collection
+    public function assignedRoles(UserEntityInterface $user): Collection
     {
         return $this->roles->rolesForSubject(User::class, (int) $user->getKey());
     }
 
-    public function selectedRoleSlugs(User $user): array
+    public function selectedRoleSlugs(UserEntityInterface $user): array
     {
         return $this->assignedRoles($user)
             ->pluck('slug')
@@ -46,9 +48,9 @@ final class UserAdministrationWorkflowService implements UserAdministrationWorkf
             ->all();
     }
 
-    public function store(array $payload): User
+    public function store(array $payload): UserEntityInterface
     {
-        return $this->transactions->transaction(function () use ($payload): User {
+        return $this->transactions->transaction(function () use ($payload): UserEntityInterface {
             $user = $this->users->create(new CreateUserData(
                 name: (string) $payload['name'],
                 email: (string) $payload['email'],
@@ -66,25 +68,30 @@ final class UserAdministrationWorkflowService implements UserAdministrationWorkf
         });
     }
 
-    public function update(User $user, array $payload, ?UploadedFile $avatar = null, ?int $uploadedBy = null): User
-    {
-        return $this->transactions->transaction(function () use ($user, $payload, $avatar, $uploadedBy): User {
+    public function update(
+        UserEntityInterface $user,
+        array $payload,
+        ?UploadedFile $avatar = null,
+        ?int $uploadedBy = null
+    ): UserEntityInterface {
+        return $this->transactions->transaction(function () use ($user, $payload, $avatar, $uploadedBy): UserEntityInterface {
+            $model = $this->toModel($user);
+
             if ($avatar !== null) {
                 $uploadedMedia = $this->media->upload(
                     file: $avatar,
                     uploadedBy: $uploadedBy,
-                    title: (string) $user->name,
-                    altText: (string) $user->name,
+                    title: (string) $model->name,
+                    altText: (string) $model->name,
                 );
 
                 $payload['avatar_media_id'] = (int) $uploadedMedia->getKey();
                 $payload['avatar_path'] = null;
 
-                $this->cleanupLegacyAvatarPath($user);
+                $this->cleanupLegacyAvatarPath($model);
             } elseif (! empty($payload['avatar_media_id'])) {
                 $payload['avatar_path'] = null;
-
-                $this->cleanupLegacyAvatarPath($user);
+                $this->cleanupLegacyAvatarPath($model);
             }
 
             $updated = $this->users->update($user, $payload);
@@ -101,7 +108,6 @@ final class UserAdministrationWorkflowService implements UserAdministrationWorkf
 
     /**
      * @param array<string, mixed> $payload
-     *
      * @return array<int, string>
      */
     private function normalizeRoleSlugs(array $payload): array
@@ -123,5 +129,14 @@ final class UserAdministrationWorkflowService implements UserAdministrationWorkf
         if (! empty($user->avatar_path) && Storage::disk('public')->exists((string) $user->avatar_path)) {
             Storage::disk('public')->delete((string) $user->avatar_path);
         }
+    }
+
+    private function toModel(UserEntityInterface $user): User
+    {
+        if (! $user instanceof User) {
+            throw new DomainException('Unsupported user entity implementation.');
+        }
+
+        return $user;
     }
 }

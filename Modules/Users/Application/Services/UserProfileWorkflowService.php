@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Users\Application\Services;
 
 use App\Core\Database\Contracts\TransactionManagerInterface;
+use DomainException;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -12,6 +13,7 @@ use Illuminate\Support\Str;
 use Modules\Media\Application\Contracts\MediaServiceInterface;
 use Modules\Users\Application\Contracts\UserProfileWorkflowInterface;
 use Modules\Users\Application\Contracts\UserServiceInterface;
+use Modules\Users\Domain\Contracts\UserEntityInterface;
 use Modules\Users\Domain\Contracts\UserRepositoryInterface;
 use Modules\Users\Domain\DTOs\CreateUserData;
 use Modules\Users\Infrastructure\Models\User;
@@ -28,9 +30,9 @@ final class UserProfileWorkflowService implements UserProfileWorkflowInterface
     ) {
     }
 
-    public function register(array $payload): User
+    public function register(array $payload): UserEntityInterface
     {
-        return $this->transactions->transaction(function () use ($payload): User {
+        return $this->transactions->transaction(function () use ($payload): UserEntityInterface {
             $user = $this->users->create(new CreateUserData(
                 name: (string) $payload['name'],
                 email: (string) $payload['email'],
@@ -48,23 +50,28 @@ final class UserProfileWorkflowService implements UserProfileWorkflowInterface
         });
     }
 
-    public function updateProfile(User $user, array $payload, ?UploadedFile $avatar = null, ?int $uploadedBy = null): User
-    {
-        return $this->transactions->transaction(function () use ($user, $payload, $avatar, $uploadedBy): User {
-            $oldEmail = (string) $user->email;
+    public function updateProfile(
+        UserEntityInterface $user,
+        array $payload,
+        ?UploadedFile $avatar = null,
+        ?int $uploadedBy = null
+    ): UserEntityInterface {
+        return $this->transactions->transaction(function () use ($user, $payload, $avatar, $uploadedBy): UserEntityInterface {
+            $model = $this->toModel($user);
+            $oldEmail = (string) $model->email;
 
             if ($avatar !== null) {
                 $uploadedMedia = $this->media->upload(
                     file: $avatar,
                     uploadedBy: $uploadedBy,
-                    title: (string) $user->name,
-                    altText: (string) $user->name,
+                    title: (string) $model->name,
+                    altText: (string) $model->name,
                 );
 
                 $payload['avatar_media_id'] = (int) $uploadedMedia->getKey();
                 $payload['avatar_path'] = null;
 
-                $this->cleanupLegacyAvatarPath($user);
+                $this->cleanupLegacyAvatarPath($model);
             }
 
             $updated = $this->users->update($user, $payload);
@@ -82,21 +89,21 @@ final class UserProfileWorkflowService implements UserProfileWorkflowInterface
     {
         $user = $this->userRepository->findById($userId);
 
-        if (! $user instanceof User) {
+        if ($user === null) {
             throw new NotFoundHttpException();
         }
 
-        if (! hash_equals($hash, sha1($user->getEmailForVerification()))) {
+        if (! hash_equals($hash, sha1((string) $user->getEmailForVerification()))) {
             throw new AccessDeniedHttpException();
         }
 
-        if ($user->hasVerifiedEmail()) {
+        if ((bool) $user->hasVerifiedEmail()) {
             return false;
         }
 
-        $user = $this->userRepository->markEmailAsVerified($user);
+        $updated = $this->userRepository->markEmailAsVerified($user);
 
-        event(new Verified($user));
+        event(new Verified($this->toModel($updated)));
 
         return true;
     }
@@ -121,5 +128,14 @@ final class UserProfileWorkflowService implements UserProfileWorkflowInterface
         if (! empty($user->avatar_path) && Storage::disk('public')->exists((string) $user->avatar_path)) {
             Storage::disk('public')->delete((string) $user->avatar_path);
         }
+    }
+
+    private function toModel(UserEntityInterface $user): User
+    {
+        if (! $user instanceof User) {
+            throw new DomainException('Unsupported user entity implementation.');
+        }
+
+        return $user;
     }
 }
