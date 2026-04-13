@@ -2,7 +2,7 @@
 
 Всички значими промени по проекта се документират в този файл.
 
-Формат:
+Форматът следва семпла и ясна структура по версии:
 - Добавено
 - Променено
 - Поправено
@@ -10,40 +10,47 @@
 
 ---
 
-## [1.1.0] - 2026-04-13
-
-### Променено
-- Рефактор на модулната архитектура за премахване на директни зависимости между модулите
-- Въвеждане на Core Contracts за комуникация между Auth, Users и RBAC
-- Пренасочване на Users и Auth логиката към Core слоевете чрез интерфейси
-- Преработка на transaction management към централен Core компонент
-- Стандартизиране на dependency flow: Module → Core → Module (без директни връзки)
+## [1.2.0] - 2026-04-13
 
 ### Добавено
-- UserEntityInterface за стабилизиране на boundary между Application/Domain и Infrastructure
-- Workflow слой (UserAdministrationWorkflowService, UserProfileWorkflowService) като orchestration ниво
-- Ясно разделение между:
-  - Application services (business logic)
-  - Workflow services (use-case orchestration)
+- Core Contracts слой за стабилизиране на комуникацията между Auth, Users и RBAC
+- Централизиран transaction management през Core database abstraction
+- User entity boundary чрез `UserEntityInterface`
+- Workflow слой за потребители:
+  - `UserAdministrationWorkflowService`
+  - `UserProfileWorkflowService`
+- Workflow слой за роли:
+  - `RoleAdministrationWorkflowService`
+- Локализационни ключове за Core module boot/manifest грешки
 
-### Подобрено
-- Runtime settings прилагане:
-  - system конфигурации се прилагат на boot ниво
-  - locale се прилага на request ниво
-- Разделяне на отговорностите в Settings runtime pipeline
-- Подобрена консистентност на DI контейнера и service binding-и
+### Променено
+- Премахнати директни зависимости между критични модули в архитектурата
+- Users модулът е приведен към contract-driven и workflow-driven data flow
+- Roles модулът е приведен към thin controller + workflow orchestration модел
+- Runtime settings pipeline е разделен по отговорности:
+  - system apply на boot ниво
+  - locale apply на request ниво
+- Core module manifest discovery/load pipeline е hardened и валидиран
+- Controller orchestration е изнесена от:
+  - `UserController`
+  - `RoleController`
+- Application и Domain contracts в Users вече не сочат директно към infrastructure user model
+- RBAC bridge flow е стабилизиран върху Core contracts
 
 ### Поправено
-- Конфликти с Laravel MustVerifyEmail trait (method signatures)
-- Проблем с липсваща таблица languages в тестова среда
-- Проблеми с module loader при unit тестове
-- Route availability в тестова среда (404 → коректни отговори)
-- RBAC access проверки при feature тестове
+- Проблеми с boot процеса при липсващи или невалидни module manifest файлове
+- Проблеми със settings runtime apply в тестова и boot среда
+- Проблеми с languages/settings boot pipeline в тестова среда
+- Конфликти с Laravel `MustVerifyEmail` signatures при boundary refactor
+- Проблеми с route availability и 404/500 сценарии в тестова среда
+- Проблеми с SQLite test execution при migrations и foreign key flow
+- Остатъчна orchestration логика в Users и Roles HTTP слоя
 
 ### Сигурност
-- Подсилена изолация между модулите чрез contract-based достъп
-- Ограничаване на достъпа до данни извън дефинираните boundaries
-- Подобрена консистентност при role assignment и permission enforcement
+- Подсилена изолация между модулите чрез contract-based boundaries
+- Ограничен достъп на application слоя до infrastructure конкретика
+- Подобрена консистентност при role/permission synchronization
+- По-устойчив и fail-fast Core boot pipeline при невалидна module конфигурация
 
 ---
 
