@@ -7,23 +7,18 @@ namespace Modules\Roles\Application\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
-use Modules\Permissions\Domain\Contracts\PermissionRepositoryInterface;
-use Modules\Permissions\Domain\Services\PermissionAssignmentService;
+use Modules\Roles\Application\Contracts\RoleAdministrationWorkflowInterface;
 use Modules\Roles\Application\Http\Requests\StoreRoleRequest;
 use Modules\Roles\Application\Http\Requests\UpdateRoleRequest;
 use Modules\Roles\Domain\Contracts\RoleRepositoryInterface;
 use Modules\Roles\Domain\DTOs\RoleData;
-use Modules\Roles\Domain\Events\RoleCreatedEvent;
-use Modules\Roles\Domain\Events\RoleDeletedEvent;
-use Modules\Roles\Domain\Events\RoleUpdatedEvent;
 use Modules\Roles\Infrastructure\Models\Role;
 
 final class RoleController extends Controller
 {
     public function __construct(
         private readonly RoleRepositoryInterface $roles,
-        private readonly PermissionRepositoryInterface $permissions,
-        private readonly PermissionAssignmentService $permissionAssignments,
+        private readonly RoleAdministrationWorkflowInterface $workflow,
     ) {
         $this->authorizeResource(Role::class, 'role');
     }
@@ -38,7 +33,7 @@ final class RoleController extends Controller
     public function create(): View
     {
         return view('roles::roles.create', [
-            'permissions' => $this->permissions->paginate(1000)->items(),
+            'permissions' => $this->workflow->availablePermissions(),
             'selectedPermissionIds' => [],
         ]);
     }
@@ -47,14 +42,10 @@ final class RoleController extends Controller
     {
         $payload = $request->validatedPayload();
 
-        $role = $this->roles->create(RoleData::fromArray($payload));
-
-        $this->permissionAssignments->syncPermissionsToRole(
-            $role,
+        $this->workflow->store(
+            RoleData::fromArray($payload),
             $payload['permission_ids'] ?? [],
         );
-
-        event(new RoleCreatedEvent($role->fresh('permissions')));
 
         return redirect()
             ->route('roles.index')
@@ -72,11 +63,8 @@ final class RoleController extends Controller
     {
         return view('roles::roles.edit', [
             'role' => $role->load('permissions'),
-            'permissions' => $this->permissions->paginate(1000)->items(),
-            'selectedPermissionIds' => $role->permissions()
-                ->pluck('permissions.id')
-                ->map(static fn (mixed $id): int => (int) $id)
-                ->all(),
+            'permissions' => $this->workflow->availablePermissions(),
+            'selectedPermissionIds' => $this->workflow->selectedPermissionIds($role),
         ]);
     }
 
@@ -84,14 +72,11 @@ final class RoleController extends Controller
     {
         $payload = $request->validatedPayload();
 
-        $updated = $this->roles->update($role, RoleData::fromArray($payload));
-
-        $this->permissionAssignments->syncPermissionsToRole(
-            $updated,
+        $this->workflow->update(
+            $role,
+            RoleData::fromArray($payload),
             $payload['permission_ids'] ?? [],
         );
-
-        event(new RoleUpdatedEvent($updated->fresh('permissions')));
 
         return redirect()
             ->route('roles.index')
@@ -102,9 +87,7 @@ final class RoleController extends Controller
     {
         $this->authorize('delete', $role);
 
-        $this->roles->delete($role);
-
-        event(new RoleDeletedEvent($role));
+        $this->workflow->delete($role);
 
         return redirect()
             ->route('roles.index')
