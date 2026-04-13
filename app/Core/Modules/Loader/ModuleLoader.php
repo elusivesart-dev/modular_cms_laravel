@@ -8,6 +8,7 @@ use App\Core\Modules\Dependency\ModuleDependencyResolver;
 use App\Core\Modules\Discovery\ModuleDiscovery;
 use App\Core\Modules\Registry\ModuleRegistry;
 use Illuminate\Contracts\Foundation\Application;
+use RuntimeException;
 
 final class ModuleLoader
 {
@@ -30,6 +31,16 @@ final class ModuleLoader
 
         foreach ($orderedModules as $module) {
             $this->resolver->validate($module->name);
+
+            if (! class_exists($module->provider)) {
+                throw new RuntimeException(
+                    __('core-modules::modules.errors.module_provider_not_found', [
+                        'provider' => $module->provider,
+                        'module' => $module->name,
+                    ])
+                );
+            }
+
             $this->app->register($module->provider);
         }
     }

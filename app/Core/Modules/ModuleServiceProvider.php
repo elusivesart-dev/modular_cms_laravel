@@ -40,6 +40,8 @@ final class ModuleServiceProvider extends ServiceProvider
 
     public function boot(ModuleLifecycleManager $manager): void
     {
+        $this->loadTranslationsFrom(__DIR__ . '/Resources/lang', 'core-modules');
+
         $manager->boot();
     }
 }
