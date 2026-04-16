@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Security\Providers;
 
-use Modules\Users\Infrastructure\Models\User;
+use App\Models\User;
 
 final class UserProvider
 {

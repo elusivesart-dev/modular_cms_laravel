@@ -6,15 +6,17 @@ namespace App\Core\Installer\Admin;
 
 use App\Core\Installer\Contracts\AdminCreatorInterface;
 use App\Core\Installer\DTO\InstallData;
+use App\Core\RBAC\Contracts\RoleCatalogInterface;
+use App\Core\RBAC\Contracts\RoleManagerInterface;
+use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
-use Modules\Roles\Domain\Contracts\RoleRepositoryInterface;
-use Modules\Users\Infrastructure\Models\User;
 
 final class DatabaseAdminCreator implements AdminCreatorInterface
 {
     public function __construct(
-        private readonly RoleRepositoryInterface $roleRepository,
+        private readonly RoleCatalogInterface $roles,
+        private readonly RoleManagerInterface $roleManager,
     ) {
     }
 
@@ -32,18 +34,29 @@ final class DatabaseAdminCreator implements AdminCreatorInterface
 
         $user->save();
 
+        $availableRoleSlugs = array_map(
+            static fn ($role): string => $role->slug,
+            $this->roles->all(),
+        );
+
         $roleSlugs = [];
 
-        if ($this->roleRepository->findBySlug('super-admin') !== null) {
+        if (in_array('super-admin', $availableRoleSlugs, true)) {
             $roleSlugs[] = 'super-admin';
         }
 
-        if ($this->roleRepository->findBySlug('admin') !== null) {
+        if (in_array('admin', $availableRoleSlugs, true)) {
             $roleSlugs[] = 'admin';
         }
 
-        if ($roleSlugs !== [] && method_exists($user, 'syncRoles')) {
-            $user->syncRoles($roleSlugs);
+        if ($roleSlugs === []) {
+            return;
         }
+
+        $this->roleManager->syncRolesToSubject(
+            $roleSlugs,
+            $user::class,
+            (int) $user->getKey(),
+        );
     }
 }

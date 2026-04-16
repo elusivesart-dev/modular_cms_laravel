@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Roles\Application\Policies;
 
+use Modules\Roles\Domain\Contracts\RoleEntityInterface;
 use Modules\Roles\Domain\Services\RoleAssignmentService;
-use Modules\Roles\Infrastructure\Models\Role;
 
 final class RolePolicy
 {
@@ -19,7 +19,7 @@ final class RolePolicy
         return $this->isSuperAdministrator($user);
     }
 
-    public function view(object $user, Role $role): bool
+    public function view(object $user, RoleEntityInterface $role): bool
     {
         return $this->isSuperAdministrator($user);
     }
@@ -29,14 +29,14 @@ final class RolePolicy
         return $this->isSuperAdministrator($user);
     }
 
-    public function update(object $user, Role $role): bool
+    public function update(object $user, RoleEntityInterface $role): bool
     {
         return $this->isSuperAdministrator($user);
     }
 
-    public function delete(object $user, Role $role): bool
+    public function delete(object $user, RoleEntityInterface $role): bool
     {
-        if ($role->is_system) {
+        if ($role->isSystem()) {
             return false;
         }
 

@@ -13,7 +13,7 @@
                 <div class="col-md-6">
                     <div class="form-group">
                         <label class="form-label d-block">{{ __('roles::roles.name') }}</label>
-                        <div class="form-control-plaintext">{{ $role->name }}</div>
+                        <div class="form-control-plaintext">{{ $role->display_name }}</div>
                     </div>
                 </div>
 
@@ -28,7 +28,7 @@
             <div class="form-group">
                 <label class="form-label d-block">{{ __('roles::roles.description') }}</label>
                 <div class="form-control-plaintext">
-                    {{ $role->description ?: '—' }}
+                    {{ $role->display_description ?: '—' }}
                 </div>
             </div>
 
@@ -44,8 +44,20 @@
 
                 <div class="border rounded p-3">
                     @forelse($role->permissions as $permission)
+                        @php
+                            $permissionLabel = $permission->name;
+
+                            if (isset($permission->display_label) && is_string($permission->display_label) && $permission->display_label !== '') {
+                                $permissionLabel = $permission->display_label;
+                            } elseif (!empty($permission->label) && is_string($permission->label) && str_contains($permission->label, '::')) {
+                                $permissionLabel = __($permission->label);
+                            } elseif (!empty($permission->label)) {
+                                $permissionLabel = (string) $permission->label;
+                            }
+                        @endphp
+
                         <div class="mb-2">
-                            {{ $permission->name }}@if($permission->label) — {{ __($permission->label) }}@endif
+                            {{ $permission->name }} — {{ $permissionLabel }}
                         </div>
                     @empty
                         <div class="text-muted small">{{ __('roles::roles.no_permissions_found') }}</div>

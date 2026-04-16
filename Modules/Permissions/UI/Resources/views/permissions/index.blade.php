@@ -41,8 +41,8 @@
                         @forelse($permissions as $permission)
                             <tr>
                                 <td>{{ $permission->name }}</td>
-                                <td>{{ __($permission->label) }}</td>
-                                <td>{{ $permission->description }}</td>
+                                <td>{{ $permission->display_label }}</td>
+                                <td>{{ $permission->display_description ?: '—' }}</td>
                                 <td>{{ $permission->roles_count }}</td>
                                 <td class="text-right">
                                     @can('update', $permission)

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\Media\Infrastructure\Models;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\Media\Infrastructure\Database\Factories\MediaFactory;
-use Modules\Users\Infrastructure\Models\User;
 
 final class Media extends Model
 {

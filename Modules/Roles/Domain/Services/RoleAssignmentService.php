@@ -8,11 +8,11 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Modules\Roles\Domain\Contracts\RoleAssignmentRepositoryInterface;
+use Modules\Roles\Domain\Contracts\RoleEntityInterface;
 use Modules\Roles\Domain\Contracts\RoleRepositoryInterface;
 use Modules\Roles\Domain\Events\RoleAssignedEvent;
 use Modules\Roles\Domain\Events\RoleRevokedEvent;
 use Modules\Roles\Domain\Exceptions\RoleAssignmentException;
-use Modules\Roles\Infrastructure\Models\Role;
 
 final class RoleAssignmentService
 {
@@ -82,7 +82,7 @@ final class RoleAssignmentService
     }
 
     /**
-     * @return Collection<int, Role>
+     * @return Collection<int, RoleEntityInterface>
      */
     public function rolesForSubject(string $subjectType, int|string $subjectId): Collection
     {
@@ -102,8 +102,7 @@ final class RoleAssignmentService
         $currentRoles = $this->rolesForSubject($subjectType, $subjectId);
 
         $currentSlugs = $currentRoles
-            ->pluck('slug')
-            ->map(static fn (mixed $slug): string => (string) $slug)
+            ->map(static fn (RoleEntityInterface $role): string => $role->getSlug())
             ->values()
             ->all();
 
@@ -123,9 +122,9 @@ final class RoleAssignmentService
         $this->forgetRbacCache($subjectType, $subjectId);
     }
 
-    private function assertNotRemovingLastSuperAdmin(Role $role, string $subjectType, int|string $subjectId): void
+    private function assertNotRemovingLastSuperAdmin(RoleEntityInterface $role, string $subjectType, int|string $subjectId): void
     {
-        if ($role->slug !== 'super-admin') {
+        if ($role->getSlug() !== 'super-admin') {
             return;
         }
 

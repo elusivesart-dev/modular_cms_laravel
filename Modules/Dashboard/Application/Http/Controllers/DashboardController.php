@@ -7,11 +7,10 @@ namespace Modules\Dashboard\Application\Http\Controllers;
 use App\Core\Audit\Models\AuditLog;
 use App\Core\Modules\Registry\ModuleRegistry;
 use App\Http\Controllers\Controller;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
 use Modules\Audit\Application\Support\AuditLogFormatter;
-use Modules\Users\Infrastructure\Models\User;
 
 final class DashboardController extends Controller
 {

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Modules\Permissions\Application\Policies;
 
 use App\Core\RBAC\Contracts\PermissionManagerInterface;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Permissions\Infrastructure\Models\Permission;
-use Modules\Users\Infrastructure\Models\User;
 
 final class PermissionPolicy
 {
@@ -15,48 +15,48 @@ final class PermissionPolicy
     ) {
     }
 
-    public function viewAny(User $user): bool
+    public function viewAny(Authenticatable $user): bool
     {
         return $this->permissions->hasPermissionForSubject(
             'permissions.view',
             $user::class,
-            (int) $user->getKey(),
+            (int) $user->getAuthIdentifier(),
         );
     }
 
-    public function view(User $user, Permission $permission): bool
+    public function view(Authenticatable $user, Permission $permission): bool
     {
         return $this->permissions->hasPermissionForSubject(
             'permissions.view',
             $user::class,
-            (int) $user->getKey(),
+            (int) $user->getAuthIdentifier(),
         );
     }
 
-    public function create(User $user): bool
+    public function create(Authenticatable $user): bool
     {
         return $this->permissions->hasPermissionForSubject(
             'permissions.create',
             $user::class,
-            (int) $user->getKey(),
+            (int) $user->getAuthIdentifier(),
         );
     }
 
-    public function update(User $user, Permission $permission): bool
+    public function update(Authenticatable $user, Permission $permission): bool
     {
         return $this->permissions->hasPermissionForSubject(
             'permissions.update',
             $user::class,
-            (int) $user->getKey(),
+            (int) $user->getAuthIdentifier(),
         );
     }
 
-    public function delete(User $user, Permission $permission): bool
+    public function delete(Authenticatable $user, Permission $permission): bool
     {
         return $this->permissions->hasPermissionForSubject(
             'permissions.delete',
             $user::class,
-            (int) $user->getKey(),
+            (int) $user->getAuthIdentifier(),
         );
     }
 }

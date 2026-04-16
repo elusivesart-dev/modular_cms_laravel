@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Modules\Roles\Application\Http\Controllers;
 
+use App\Core\Localization\Contracts\LanguageRegistryInterface;
 use App\Http\Controllers\Controller;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Modules\Roles\Application\Contracts\RoleAdministrationWorkflowInterface;
 use Modules\Roles\Application\Http\Requests\StoreRoleRequest;
 use Modules\Roles\Application\Http\Requests\UpdateRoleRequest;
+use Modules\Roles\Application\Services\RoleTranslationService;
 use Modules\Roles\Domain\Contracts\RoleRepositoryInterface;
 use Modules\Roles\Domain\DTOs\RoleData;
 use Modules\Roles\Infrastructure\Models\Role;
@@ -19,6 +21,8 @@ final class RoleController extends Controller
     public function __construct(
         private readonly RoleRepositoryInterface $roles,
         private readonly RoleAdministrationWorkflowInterface $workflow,
+        private readonly RoleTranslationService $translations,
+        private readonly LanguageRegistryInterface $languages,
     ) {
         $this->authorizeResource(Role::class, 'role');
     }
@@ -26,15 +30,19 @@ final class RoleController extends Controller
     public function index(): View
     {
         return view('roles::roles.index', [
-            'roles' => $this->roles->paginate(),
+            'roles' => $this->translations->decoratePaginator($this->roles->paginate()),
         ]);
     }
 
     public function create(): View
     {
+        $languages = $this->languages->getAvailableLanguages();
+
         return view('roles::roles.create', [
             'permissions' => $this->workflow->availablePermissions(),
             'selectedPermissionIds' => [],
+            'languages' => $languages,
+            'translationInputs' => $this->translations->translationInputs(null, $languages),
         ]);
     }
 
@@ -54,17 +62,25 @@ final class RoleController extends Controller
 
     public function show(Role $role): View
     {
+        $role->load(['assignments', 'permissions', 'translations']);
+        $this->translations->decorateRole($role);
+
         return view('roles::roles.show', [
-            'role' => $role->load(['assignments', 'permissions']),
+            'role' => $role,
         ]);
     }
 
     public function edit(Role $role): View
     {
+        $role->load(['permissions', 'translations']);
+        $languages = $this->languages->getAvailableLanguages();
+
         return view('roles::roles.edit', [
-            'role' => $role->load('permissions'),
+            'role' => $role,
             'permissions' => $this->workflow->availablePermissions(),
             'selectedPermissionIds' => $this->workflow->selectedPermissionIds($role),
+            'languages' => $languages,
+            'translationInputs' => $this->translations->translationInputs($role, $languages),
         ]);
     }
 

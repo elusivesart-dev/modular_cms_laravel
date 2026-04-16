@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Users\Infrastructure\Models;
 
+use App\Core\Media\Contracts\MediaAssetManagerInterface;
+use App\Models\Media;
 use Illuminate\Auth\MustVerifyEmail;
 use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,7 +13,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use Modules\Media\Infrastructure\Models\Media;
 use Modules\Users\Application\Notifications\VerifyEmailNotification;
 use Modules\Users\Domain\Contracts\UserEntityInterface;
 use Modules\Users\Infrastructure\Database\Factories\UserFactory;
@@ -62,12 +63,18 @@ final class User extends Authenticatable implements MustVerifyEmailContract, Use
             return $this->avatarMedia->url;
         }
 
-        if ($this->avatarMedia !== null && $this->avatarMedia->url !== null) {
-            return $this->avatarMedia->url;
+        $attributes = $this->getAttributes();
+
+        if (array_key_exists('avatar_media_id', $attributes) && $attributes['avatar_media_id'] !== null) {
+            $media = app(MediaAssetManagerInterface::class)->findById((int) $attributes['avatar_media_id']);
+
+            if ($media !== null && $media->url !== null) {
+                return $media->url;
+            }
         }
 
-        if (! empty($this->avatar_path)) {
-            return url('storage/' . ltrim((string) $this->avatar_path, '/'));
+        if (array_key_exists('avatar_path', $attributes) && ! empty($attributes['avatar_path'])) {
+            return url('storage/' . ltrim((string) $attributes['avatar_path'], '/'));
         }
 
         return admin_theme_asset('images/avatar-4.jpg');

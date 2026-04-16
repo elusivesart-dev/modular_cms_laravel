@@ -16,7 +16,10 @@ final class InstallerServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->singleton(AdminCreatorInterface::class, DatabaseAdminCreator::class);
+        if (! $this->app->bound(AdminCreatorInterface::class)) {
+            $this->app->singleton(AdminCreatorInterface::class, DatabaseAdminCreator::class);
+        }
+
         $this->app->singleton(InstallerBootstrapperInterface::class, NullInstallerBootstrapper::class);
         $this->app->singleton(InstallerManager::class);
     }

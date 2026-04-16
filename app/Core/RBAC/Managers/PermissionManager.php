@@ -8,41 +8,61 @@ use App\Core\RBAC\Contracts\PermissionManagerInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Modules\Permissions\Infrastructure\Models\Permission;
-use Modules\Roles\Infrastructure\Models\RoleAssignment;
+use Illuminate\Support\Facades\Schema;
 
 final class PermissionManager implements PermissionManagerInterface
 {
     public function create(string $permissionSlug): void
     {
-        Permission::query()->firstOrCreate(
+        if (! $this->permissionsTableExists()) {
+            return;
+        }
+
+        DB::table('permissions')->updateOrInsert(
             ['name' => $permissionSlug],
             [
                 'label' => null,
                 'description' => null,
+                'updated_at' => now(),
+                'created_at' => now(),
             ]
         );
     }
 
     public function delete(string $permissionSlug): bool
     {
-        $permission = Permission::query()
+        if (! $this->permissionsTableExists()) {
+            return false;
+        }
+
+        $permission = DB::table('permissions')
             ->where('name', $permissionSlug)
-            ->first();
+            ->first(['id']);
 
         if ($permission === null) {
             return false;
         }
 
-        $roleIds = $permission->roles()
-            ->pluck('roles.id')
-            ->map(static fn (mixed $id): int => (int) $id)
-            ->all();
+        $permissionId = (int) $permission->id;
 
-        $deleted = (bool) DB::transaction(static function () use ($permission): bool {
-            $permission->roles()->detach();
+        $roleIds = $this->rolePermissionsTableExists()
+            ? DB::table('role_permissions')
+                ->where('permission_id', $permissionId)
+                ->pluck('role_id')
+                ->map(static fn (mixed $id): int => (int) $id)
+                ->all()
+            : [];
 
-            return (bool) $permission->delete();
+        $deleted = (bool) DB::transaction(function () use ($permissionId): bool {
+            if (Schema::hasTable('role_permissions')) {
+                DB::table('role_permissions')
+                    ->where('permission_id', $permissionId)
+                    ->delete();
+            }
+
+            return DB::table('permissions')
+                ->where('id', $permissionId)
+                ->delete() > 0;
         });
 
         if ($deleted) {
@@ -54,7 +74,11 @@ final class PermissionManager implements PermissionManagerInterface
 
     public function exists(string $permissionSlug): bool
     {
-        return Permission::query()
+        if (! $this->permissionsTableExists()) {
+            return false;
+        }
+
+        return DB::table('permissions')
             ->where('name', $permissionSlug)
             ->exists();
     }
@@ -88,6 +112,15 @@ final class PermissionManager implements PermissionManagerInterface
      */
     private function permissionsForSubject(string $subjectType, int|string $subjectId): Collection
     {
+        if (
+            ! $this->roleAssignmentsTableExists()
+            || ! $this->rolesTableExists()
+            || ! $this->rolePermissionsTableExists()
+            || ! $this->permissionsTableExists()
+        ) {
+            return collect();
+        }
+
         return Cache::remember(
             $this->permissionsCacheKey($subjectType, $subjectId),
             now()->addMinutes(10),
@@ -117,13 +150,17 @@ final class PermissionManager implements PermissionManagerInterface
      */
     private function forgetPermissionCachesForRoleIds(array $roleIds): void
     {
+        if (! $this->roleAssignmentsTableExists()) {
+            return;
+        }
+
         $normalizedRoleIds = array_values(array_unique(array_map('intval', $roleIds)));
 
         if ($normalizedRoleIds === []) {
             return;
         }
 
-        $assignments = RoleAssignment::query()
+        $assignments = DB::table('role_assignments')
             ->whereIn('role_id', $normalizedRoleIds)
             ->get(['subject_type', 'subject_id']);
 
@@ -135,5 +172,25 @@ final class PermissionManager implements PermissionManagerInterface
                 )
             );
         }
+    }
+
+    private function permissionsTableExists(): bool
+    {
+        return Schema::hasTable('permissions');
+    }
+
+    private function rolePermissionsTableExists(): bool
+    {
+        return Schema::hasTable('role_permissions');
+    }
+
+    private function roleAssignmentsTableExists(): bool
+    {
+        return Schema::hasTable('role_assignments');
+    }
+
+    private function rolesTableExists(): bool
+    {
+        return Schema::hasTable('roles');
     }
 }

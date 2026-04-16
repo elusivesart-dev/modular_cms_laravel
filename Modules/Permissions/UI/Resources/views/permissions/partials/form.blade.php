@@ -15,8 +15,55 @@
     @enderror
 </div>
 
+<div class="card mb-4">
+    <div class="card-header">
+        <h6 class="mb-0">{{ __('permissions::permissions.translations_title') }}</h6>
+    </div>
+
+    <div class="card-block">
+        @foreach($languages as $language)
+            <div class="border rounded p-3 mb-3">
+                <h6 class="mb-3">{{ $language->nativeName ?: $language->name }} ({{ $language->code }})</h6>
+
+                <div class="form-group form-primary">
+                    <label for="translations_{{ $language->code }}_label" class="form-label">{{ __('permissions::permissions.fields.localized_label') }}</label>
+                    <input
+                        type="text"
+                        name="translations[{{ $language->code }}][label]"
+                        id="translations_{{ $language->code }}_label"
+                        value="{{ old('translations.' . $language->code . '.label', $translationInputs[$language->code]['label'] ?? '') }}"
+                        class="form-control"
+                    >
+                    <span class="form-bar"></span>
+                    @error('translations.' . $language->code . '.label')
+                        <div class="text-danger small mt-1">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="form-group form-primary mb-0">
+                    <label for="translations_{{ $language->code }}_description" class="form-label">{{ __('permissions::permissions.fields.localized_description') }}</label>
+                    <textarea
+                        name="translations[{{ $language->code }}][description]"
+                        id="translations_{{ $language->code }}_description"
+                        rows="3"
+                        class="form-control"
+                    >{{ old('translations.' . $language->code . '.description', $translationInputs[$language->code]['description'] ?? '') }}</textarea>
+                    <span class="form-bar"></span>
+                    @error('translations.' . $language->code . '.description')
+                        <div class="text-danger small mt-1">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+        @endforeach
+
+        @error('translations')
+            <div class="text-danger small mt-1">{{ $message }}</div>
+        @enderror
+    </div>
+</div>
+
 <div class="form-group form-primary">
-    <label for="label" class="form-label">{{ __('permissions::permissions.fields.label') }}</label>
+    <label for="label" class="form-label">{{ __('permissions::permissions.fields.system_label') }}</label>
     <input
         type="text"
         name="label"
@@ -32,7 +79,7 @@
 </div>
 
 <div class="form-group form-primary">
-    <label for="description" class="form-label">{{ __('permissions::permissions.fields.description') }}</label>
+    <label for="description" class="form-label">{{ __('permissions::permissions.fields.system_description') }}</label>
     <textarea
         name="description"
         id="description"
@@ -40,6 +87,7 @@
         class="form-control"
     >{{ old('description', $permission?->description) }}</textarea>
     <span class="form-bar"></span>
+    <small class="text-muted">{{ __('permissions::permissions.help.description') }}</small>
     @error('description')
         <div class="text-danger small mt-1">{{ $message }}</div>
     @enderror

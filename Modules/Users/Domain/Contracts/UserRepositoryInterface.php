@@ -24,5 +24,11 @@ interface UserRepositoryInterface
 
     public function findByEmail(string $email): ?UserEntityInterface;
 
+    public function slugExists(string $slug, int $ignoreUserId = 0): bool;
+
+    public function clearEmailVerification(UserEntityInterface $user): UserEntityInterface;
+
+    public function markEmailAsVerified(UserEntityInterface $user): UserEntityInterface;
+
     public function paginate(int $perPage = 15): LengthAwarePaginator;
 }

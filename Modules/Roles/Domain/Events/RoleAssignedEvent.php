@@ -6,7 +6,7 @@ namespace Modules\Roles\Domain\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Modules\Roles\Infrastructure\Models\Role;
+use Modules\Roles\Domain\Contracts\RoleEntityInterface;
 
 final class RoleAssignedEvent
 {
@@ -14,7 +14,7 @@ final class RoleAssignedEvent
     use SerializesModels;
 
     public function __construct(
-        public Role $role,
+        public RoleEntityInterface $role,
         public string $subjectType,
         public int|string $subjectId,
     ) {

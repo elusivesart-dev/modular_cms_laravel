@@ -18,12 +18,11 @@ use App\Core\Localization\Exceptions\LanguageNotFoundException;
 use App\Core\Localization\Http\Requests\DeleteLanguageRequest;
 use App\Core\Localization\Http\Requests\UpdateDefaultLocaleRequest;
 use App\Core\Localization\Http\Requests\UploadLanguagePackageRequest;
+use App\Core\Settings\Contracts\SystemSettingsStoreInterface;
 use App\Http\Controllers\Controller;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
-use Modules\Settings\Domain\Contracts\SettingRepositoryInterface;
-use Modules\Settings\Domain\Services\SettingService;
 use Throwable;
 
 final class LanguageController extends Controller
@@ -33,16 +32,13 @@ final class LanguageController extends Controller
         private readonly LanguageRepositoryInterface $languageRepository,
         private readonly LanguageArchiveInstallerInterface $languageArchiveInstaller,
         private readonly LanguageDeleterInterface $languageDeleter,
-        private readonly SettingRepositoryInterface $settingRepository,
-        private readonly SettingService $settingService,
+        private readonly SystemSettingsStoreInterface $settings,
     ) {
     }
 
     public function index(): View
     {
-        $runtimeSettings = $this->settingRepository->getRuntimeSettings();
-
-        $currentDefaultLocale = (string) $runtimeSettings->get(
+        $currentDefaultLocale = (string) $this->settings->get(
             'system.default_locale',
             $this->languages->getFallbackLocale()
         );
@@ -57,19 +53,21 @@ final class LanguageController extends Controller
     public function updateDefaultLocale(UpdateDefaultLocaleRequest $request): RedirectResponse
     {
         $payload = $request->validatedPayload();
-        $runtimeSettings = $this->settingRepository->getRuntimeSettings();
 
-        $previousDefaultLocale = (string) $runtimeSettings->get(
+        $previousDefaultLocale = (string) $this->settings->get(
             'system.default_locale',
             $this->languages->getFallbackLocale()
         );
 
-        $this->settingService->updateGroup([
-            'group' => 'system',
-            'values' => [
-                'system.default_locale' => $payload['locale'],
-            ],
-        ]);
+        $this->settings->putString(
+            group: 'system',
+            key: 'system.default_locale',
+            value: $payload['locale'],
+            label: null,
+            description: null,
+            isPublic: false,
+            isSystem: true,
+        );
 
         $request->session()->put('locale', $payload['locale']);
 
@@ -131,9 +129,7 @@ final class LanguageController extends Controller
         $language = $this->languageRepository->findByCode($code);
 
         try {
-            $runtimeSettings = $this->settingRepository->getRuntimeSettings();
-
-            $currentDefaultLocale = (string) $runtimeSettings->get(
+            $currentDefaultLocale = (string) $this->settings->get(
                 'system.default_locale',
                 $this->languages->getFallbackLocale()
             );

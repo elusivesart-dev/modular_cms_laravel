@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Modules\Users\Application\Services;
 
 use App\Core\Database\Contracts\TransactionManagerInterface;
+use App\Core\Media\Contracts\MediaAssetManagerInterface;
 use DomainException;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Modules\Media\Application\Contracts\MediaServiceInterface;
 use Modules\Users\Application\Contracts\UserProfileWorkflowInterface;
 use Modules\Users\Application\Contracts\UserServiceInterface;
 use Modules\Users\Domain\Contracts\UserEntityInterface;
@@ -25,7 +25,7 @@ final class UserProfileWorkflowService implements UserProfileWorkflowInterface
     public function __construct(
         private readonly UserServiceInterface $users,
         private readonly UserRepositoryInterface $userRepository,
-        private readonly MediaServiceInterface $media,
+        private readonly MediaAssetManagerInterface $mediaAssets,
         private readonly TransactionManagerInterface $transactions,
     ) {
     }
@@ -61,14 +61,14 @@ final class UserProfileWorkflowService implements UserProfileWorkflowInterface
             $oldEmail = (string) $model->email;
 
             if ($avatar !== null) {
-                $uploadedMedia = $this->media->upload(
+                $uploadedMedia = $this->mediaAssets->uploadImage(
                     file: $avatar,
                     uploadedBy: $uploadedBy,
                     title: (string) $model->name,
                     altText: (string) $model->name,
                 );
 
-                $payload['avatar_media_id'] = (int) $uploadedMedia->getKey();
+                $payload['avatar_media_id'] = $uploadedMedia->id;
                 $payload['avatar_path'] = null;
 
                 $this->cleanupLegacyAvatarPath($model);

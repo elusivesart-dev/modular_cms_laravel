@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Modules\Settings\Application\Providers;
 
+use App\Core\Settings\Contracts\SystemSettingsStoreInterface;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Modules\Settings\Application\Http\Middleware\ApplySystemSettings;
 use Modules\Settings\Application\Policies\SettingPolicy;
+use Modules\Settings\Application\Services\CoreSystemSettingsStore;
 use Modules\Settings\Application\Services\RuntimeSettingsApplier;
 use Modules\Settings\Domain\Contracts\SettingRepositoryInterface;
 use Modules\Settings\Infrastructure\Models\Setting;
@@ -27,6 +29,7 @@ final class SettingsServiceProvider extends ServiceProvider
 
         $this->app->singleton(SettingRepositoryInterface::class, SettingRepository::class);
         $this->app->singleton(RuntimeSettingsApplier::class);
+        $this->app->singleton(SystemSettingsStoreInterface::class, CoreSystemSettingsStore::class);
     }
 
     public function boot(Router $router, RuntimeSettingsApplier $runtimeSettingsApplier): void

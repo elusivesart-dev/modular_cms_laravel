@@ -31,6 +31,10 @@
     </div>
 @endif
 
+@php
+    $avatarPreviewUrl = old('avatar_preview_url', $user->avatar_url);
+@endphp
+
 <div class="card">
     <div class="card-header">
         <h5>{{ __('users::users.edit') }}</h5>
@@ -93,7 +97,8 @@
 
                 <div class="mb-3">
                     <img
-                        src="{{ old('avatar_media_id') ? optional(\Modules\Media\Infrastructure\Models\Media::query()->find((int) old('avatar_media_id')))->url ?? $user->avatar_url : $user->avatar_url }}"
+                        id="admin_avatar_preview"
+                        src="{{ $avatarPreviewUrl }}"
                         alt="{{ $user->name }}"
                         style="width: 90px; height: 90px; object-fit: cover; border-radius: 50%;"
                     >
@@ -112,6 +117,13 @@
                     name="avatar_media_id"
                     id="admin_avatar_media_id"
                     value="{{ old('avatar_media_id', $user->avatar_media_id) }}"
+                >
+
+                <input
+                    type="hidden"
+                    name="avatar_preview_url"
+                    id="admin_avatar_preview_url"
+                    value="{{ $avatarPreviewUrl }}"
                 >
 
                 <div class="mt-2">
@@ -184,9 +196,19 @@
 
     window.setMediaPickerValue = function (targetId, mediaId, mediaUrl) {
         const input = document.getElementById(targetId);
+        const preview = document.getElementById('admin_avatar_preview');
+        const previewUrl = document.getElementById('admin_avatar_preview_url');
 
         if (input) {
             input.value = mediaId;
+        }
+
+        if (preview && mediaUrl) {
+            preview.src = mediaUrl;
+        }
+
+        if (previewUrl && mediaUrl) {
+            previewUrl.value = mediaUrl;
         }
     };
 </script>

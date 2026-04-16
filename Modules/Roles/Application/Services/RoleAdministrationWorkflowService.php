@@ -7,6 +7,7 @@ namespace Modules\Roles\Application\Services;
 use Modules\Permissions\Domain\Contracts\PermissionRepositoryInterface;
 use Modules\Permissions\Domain\Services\PermissionAssignmentService;
 use Modules\Roles\Application\Contracts\RoleAdministrationWorkflowInterface;
+use Modules\Roles\Domain\Contracts\RoleEntityInterface;
 use Modules\Roles\Domain\Contracts\RoleRepositoryInterface;
 use Modules\Roles\Domain\DTOs\RoleData;
 use Modules\Roles\Domain\Events\RoleCreatedEvent;
@@ -28,52 +29,58 @@ final class RoleAdministrationWorkflowService implements RoleAdministrationWorkf
         return $this->permissions->paginate(1000)->items();
     }
 
-    public function selectedPermissionIds(Role $role): array
+    public function selectedPermissionIds(RoleEntityInterface $role): array
     {
-        return $role->permissions()
-            ->pluck('permissions.id')
-            ->map(static fn (mixed $id): int => (int) $id)
-            ->all();
+        return $role->getSelectedPermissionIds();
     }
 
-    public function store(RoleData $data, array $permissionIds = []): Role
+    public function store(RoleData $data, array $permissionIds = []): RoleEntityInterface
     {
         $role = $this->roles->create($data);
 
         $this->permissionAssignments->syncPermissionsToRole(
-            $role,
+            $this->toModel($role),
             $permissionIds,
         );
 
         /** @var Role $freshRole */
-        $freshRole = $role->fresh('permissions');
+        $freshRole = $this->toModel($role)->fresh('permissions');
 
         event(new RoleCreatedEvent($freshRole));
 
         return $freshRole;
     }
 
-    public function update(Role $role, RoleData $data, array $permissionIds = []): Role
+    public function update(RoleEntityInterface $role, RoleData $data, array $permissionIds = []): RoleEntityInterface
     {
         $updated = $this->roles->update($role, $data);
 
         $this->permissionAssignments->syncPermissionsToRole(
-            $updated,
+            $this->toModel($updated),
             $permissionIds,
         );
 
         /** @var Role $freshRole */
-        $freshRole = $updated->fresh('permissions');
+        $freshRole = $this->toModel($updated)->fresh('permissions');
 
         event(new RoleUpdatedEvent($freshRole));
 
         return $freshRole;
     }
 
-    public function delete(Role $role): void
+    public function delete(RoleEntityInterface $role): void
     {
-        $this->roles->delete($role);
-
         event(new RoleDeletedEvent($role));
+
+        $this->roles->delete($role);
+    }
+
+    private function toModel(RoleEntityInterface $role): Role
+    {
+        if (! $role instanceof Role) {
+            throw new \DomainException('Unsupported role entity implementation.');
+        }
+
+        return $role;
     }
 }

@@ -27,6 +27,27 @@ return [
     'yes' => 'Да',
     'no' => 'Не',
     'view' => 'Преглед',
+    'translations_title' => 'Преводи',
+    'localized_name' => 'Име за езика',
+    'localized_description' => 'Описание за езика',
+    'slug_help' => 'Само малки латински букви, цифри и тире. Пример: content-manager',
+    'validation' => [
+        'role_name_required' => 'Попълни име на ролята поне за един език.',
+    ],
+    'items' => [
+        'super-admin' => [
+            'name' => 'Супер администратор',
+            'description' => 'Пълен административен достъп.',
+        ],
+        'admin' => [
+            'name' => 'Администратор',
+            'description' => 'Административен достъп.',
+        ],
+        'editor' => [
+            'name' => 'Редактор',
+            'description' => 'Достъп за редакция на съдържание.',
+        ],
+    ],
     'exceptions' => [
         'role_not_found' => 'Ролята ":role" не беше намерена.',
     ],

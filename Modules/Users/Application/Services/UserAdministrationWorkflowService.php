@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Modules\Users\Application\Services;
 
 use App\Core\Database\Contracts\TransactionManagerInterface;
+use App\Core\Media\Contracts\MediaAssetManagerInterface;
 use App\Core\RBAC\Contracts\RoleCatalogInterface;
 use App\Core\RBAC\Contracts\RoleManagerInterface;
 use DomainException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Modules\Media\Application\Contracts\MediaServiceInterface;
 use Modules\Users\Application\Contracts\UserAdministrationWorkflowInterface;
 use Modules\Users\Application\Contracts\UserServiceInterface;
 use Modules\Users\Domain\Contracts\UserEntityInterface;
@@ -24,7 +24,7 @@ final class UserAdministrationWorkflowService implements UserAdministrationWorkf
         private readonly UserServiceInterface $users,
         private readonly RoleManagerInterface $roles,
         private readonly RoleCatalogInterface $roleCatalog,
-        private readonly MediaServiceInterface $media,
+        private readonly MediaAssetManagerInterface $mediaAssets,
         private readonly TransactionManagerInterface $transactions,
     ) {
     }
@@ -76,16 +76,19 @@ final class UserAdministrationWorkflowService implements UserAdministrationWorkf
     ): UserEntityInterface {
         return $this->transactions->transaction(function () use ($user, $payload, $avatar, $uploadedBy): UserEntityInterface {
             $model = $this->toModel($user);
+            $roleSlugs = $this->normalizeRoleSlugs($payload);
+
+            unset($payload['role_slugs']);
 
             if ($avatar !== null) {
-                $uploadedMedia = $this->media->upload(
+                $uploadedMedia = $this->mediaAssets->uploadImage(
                     file: $avatar,
                     uploadedBy: $uploadedBy,
                     title: (string) $model->name,
                     altText: (string) $model->name,
                 );
 
-                $payload['avatar_media_id'] = (int) $uploadedMedia->getKey();
+                $payload['avatar_media_id'] = $uploadedMedia->id;
                 $payload['avatar_path'] = null;
 
                 $this->cleanupLegacyAvatarPath($model);
@@ -97,7 +100,7 @@ final class UserAdministrationWorkflowService implements UserAdministrationWorkf
             $updated = $this->users->update($user, $payload);
 
             $this->roles->syncRolesToSubject(
-                $this->normalizeRoleSlugs($payload),
+                $roleSlugs,
                 User::class,
                 (int) $updated->getKey(),
             );

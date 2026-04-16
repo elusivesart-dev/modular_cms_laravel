@@ -27,6 +27,27 @@ return [
     'yes' => 'Yes',
     'no' => 'No',
     'view' => 'View',
+    'translations_title' => 'Translations',
+    'localized_name' => 'Localized name',
+    'localized_description' => 'Localized description',
+    'slug_help' => 'Only lowercase Latin letters, numbers, and hyphens. Example: content-manager',
+    'validation' => [
+        'role_name_required' => 'Provide a role name for at least one language.',
+    ],
+    'items' => [
+        'super-admin' => [
+            'name' => 'Super Administrator',
+            'description' => 'Full administrative access.',
+        ],
+        'admin' => [
+            'name' => 'Administrator',
+            'description' => 'Administrative access.',
+        ],
+        'editor' => [
+            'name' => 'Editor',
+            'description' => 'Content editing access.',
+        ],
+    ],
     'exceptions' => [
         'role_not_found' => 'Role ":role" was not found.',
     ],

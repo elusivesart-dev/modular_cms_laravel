@@ -6,14 +6,14 @@ namespace Modules\Roles\Domain\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Modules\Roles\Infrastructure\Models\Role;
+use Modules\Roles\Domain\Contracts\RoleEntityInterface;
 
 final class RoleUpdatedEvent
 {
     use Dispatchable;
     use SerializesModels;
 
-    public function __construct(public Role $role)
+    public function __construct(public RoleEntityInterface $role)
     {
     }
 }

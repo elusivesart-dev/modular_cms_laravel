@@ -6,8 +6,10 @@ namespace Modules\Media\Infrastructure\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\Schema;
 use Modules\Permissions\Infrastructure\Models\Permission;
+use Modules\Permissions\Infrastructure\Models\PermissionTranslation;
 use Modules\Roles\Infrastructure\Models\RoleAssignment;
 
 final class MediaPermissionSeeder extends Seeder
@@ -15,9 +17,9 @@ final class MediaPermissionSeeder extends Seeder
     public function run(): void
     {
         if (
-            !Schema::hasTable('permissions')
-            || !Schema::hasTable('roles')
-            || !Schema::hasTable('role_permissions')
+            ! Schema::hasTable('permissions')
+            || ! Schema::hasTable('roles')
+            || ! Schema::hasTable('role_permissions')
         ) {
             return;
         }
@@ -38,6 +40,8 @@ final class MediaPermissionSeeder extends Seeder
                     'description' => null,
                 ]
             );
+
+            $this->syncTranslations($model, (string) $permission['label']);
 
             $permissionIdsByName[$permission['name']] = (int) $model->getKey();
         }
@@ -83,6 +87,41 @@ final class MediaPermissionSeeder extends Seeder
 
             $this->forgetPermissionCachesForRoleId((int) $adminRoleId);
         }
+    }
+
+    private function syncTranslations(Permission $permission, string $labelKey): void
+    {
+        if (! Schema::hasTable('permission_translations')) {
+            return;
+        }
+
+        foreach ($this->supportedLocales() as $locale) {
+            if (! Lang::has($labelKey, $locale)) {
+                continue;
+            }
+
+            PermissionTranslation::query()->updateOrCreate(
+                [
+                    'permission_id' => (int) $permission->getKey(),
+                    'locale' => $locale,
+                ],
+                [
+                    'label' => (string) __($labelKey, [], $locale),
+                    'description' => null,
+                ]
+            );
+        }
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function supportedLocales(): array
+    {
+        return array_values(array_unique(array_filter([
+            (string) config('app.locale'),
+            (string) config('app.fallback_locale'),
+        ])));
     }
 
     private function forgetPermissionCachesForRoleId(int $roleId): void

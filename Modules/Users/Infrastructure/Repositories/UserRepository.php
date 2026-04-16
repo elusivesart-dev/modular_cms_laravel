@@ -52,6 +52,43 @@ final class UserRepository implements UserRepositoryInterface
             ->first();
     }
 
+    public function slugExists(string $slug, int $ignoreUserId = 0): bool
+    {
+        return User::query()
+            ->where('slug', $slug)
+            ->when(
+                $ignoreUserId > 0,
+                static fn ($query) => $query->whereKeyNot($ignoreUserId)
+            )
+            ->exists();
+    }
+
+    public function clearEmailVerification(UserEntityInterface $user): UserEntityInterface
+    {
+        $model = $this->toModel($user);
+
+        $model->forceFill([
+            'email_verified_at' => null,
+        ])->save();
+
+        return $model->refresh();
+    }
+
+    public function markEmailAsVerified(UserEntityInterface $user): UserEntityInterface
+    {
+        $model = $this->toModel($user);
+
+        if (method_exists($model, 'markEmailAsVerified')) {
+            $model->markEmailAsVerified();
+        } else {
+            $model->forceFill([
+                'email_verified_at' => now(),
+            ])->save();
+        }
+
+        return $model->refresh();
+    }
+
     public function paginate(int $perPage = 15): LengthAwarePaginator
     {
         return User::query()

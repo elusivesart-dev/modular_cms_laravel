@@ -10,6 +10,48 @@
 
 ---
 
+## [1.2.1] - 2026-04-16
+
+### Добавено
+- Core boundary за system settings чрез `SystemSettingsStoreInterface`
+- Core boundary за media asset достъп чрез `MediaAssetManagerInterface`
+- DTO за media asset пренос между слоевете
+- Централизиран translation sync за permission labels
+- Допълнителен production hardening в `AppServiceProvider`
+- Alias слой за runtime съвместимост на `App\Models\User` и `App\Models\Media`
+
+### Променено
+- Изчистени критични `Core -> Module` зависимости в settings, localization, installer, security и RBAC слоя
+- Изчистени критични `Module -> Module` зависимости в активния runtime flow между Users и Media
+- Users avatar/media flow е пренасочен през Core contracts вместо директни module зависимости
+- Policies са приведени към по-безопасен auth contract flow за по-добра Gate съвместимост
+- Permission seed/bootstrap flow е стабилизиран и синхронизиран с `permission_translations`
+- Roles UI визуализира permission labels по-консистентно
+- UI flow за редакция на потребители е изчистен от директни model/query извиквания в Blade
+- Repository/update flow за потребители е стабилизиран спрямо role assignment payload-а
+- Runtime fallback-и за avatar preview и avatar retrieval са hardened спрямо strict attribute checks
+
+### Поправено
+- Runtime грешка при `RoleOptionData` / roles catalog integration
+- Проблеми при Tinker/runtime alias резолвиране на user модела
+- Проблеми при policy type-hints и Gate authorization flow
+- Проблеми с mass assignment на `role_slugs` при user update
+- Проблеми с липсващи атрибути (`avatar_media_id`) при strict Eloquent mode
+- Проблеми при audit index/admin layout avatar rendering
+- Проблеми при user edit avatar picker preview flow
+- Проблеми при permission-protected routes за super-admin и admin сценарии
+- Проблеми при installer admin bootstrap assignment flow
+- Проблемни и излишни cache/runtime артефакти в проекта
+
+### Сигурност
+- Подсилена модулна изолация чрез Core contracts вместо директни cross-module зависимости
+- По-строг и предвидим permission/policy flow
+- По-ранно засичане на Eloquent attribute/access проблеми извън production
+- По-чист repository/update boundary без невалиден payload към persistence слоя
+- Подобрена стабилност на RBAC authorization в защитени административни маршрути
+
+---
+
 ## [1.2.0] - 2026-04-13
 
 ### Добавено
@@ -43,7 +85,7 @@
 - Проблеми с languages/settings boot pipeline в тестова среда
 - Конфликти с Laravel `MustVerifyEmail` signatures при boundary refactor
 - Проблеми с route availability и 404/500 сценарии в тестова среда
-- Проблеми с SQLite test execution при migrations и foreign key flow
+- Проблеми със SQLite test execution при migrations и foreign key flow
 - Остатъчна orchestration логика в Users и Roles HTTP слоя
 
 ### Сигурност

@@ -38,9 +38,9 @@
                     <tbody>
                     @forelse($roles as $role)
                         <tr>
-                            <td>{{ $role->name }}</td>
+                            <td>{{ $role->display_name }}</td>
                             <td>{{ $role->slug }}</td>
-                            <td>{{ $role->description }}</td>
+                            <td>{{ $role->display_description }}</td>
                             <td>{{ $role->is_system ? __('roles::roles.yes') : __('roles::roles.no') }}</td>
                             <td>{{ (int) $role->permissions_count }}</td>
                             <td class="text-right">

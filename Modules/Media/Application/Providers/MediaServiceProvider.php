@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\Media\Application\Providers;
 
+use App\Core\Media\Contracts\MediaAssetManagerInterface;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Modules\Media\Application\Contracts\MediaServiceInterface;
 use Modules\Media\Application\Policies\MediaPolicy;
+use Modules\Media\Application\Services\CoreMediaAssetManager;
 use Modules\Media\Application\Services\MediaService;
 use Modules\Media\Domain\Contracts\MediaRepositoryInterface;
 use Modules\Media\Infrastructure\Models\Media;
@@ -25,6 +27,8 @@ final class MediaServiceProvider extends ServiceProvider
         $this->app->singleton(MediaRepositoryInterface::class, MediaRepository::class);
         $this->app->singleton(MediaServiceInterface::class, MediaService::class);
         $this->app->singleton(MediaService::class);
+        $this->app->singleton(MediaAssetManagerInterface::class, CoreMediaAssetManager::class);
+        $this->app->singleton(CoreMediaAssetManager::class);
     }
 
     public function boot(): void

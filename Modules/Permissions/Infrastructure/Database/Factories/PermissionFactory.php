@@ -16,12 +16,12 @@ final class PermissionFactory extends Factory
 
     public function definition(): array
     {
-        $module = $this->faker->randomElement(['users', 'roles', 'permissions', 'settings', 'media']);
+        $module = $this->faker->randomElement(['users', 'roles', 'permissions', 'settings', 'localization', 'themes']);
         $action = $this->faker->randomElement(['view', 'create', 'update', 'delete']);
 
         return [
             'name' => sprintf('%s.%s', $module, $action),
-            'label' => ucfirst($module) . ' ' . ucfirst($action),
+            'label' => sprintf('permissions::permissions.items.%s.%s', $module, $action),
             'description' => $this->faker->sentence(),
         ];
     }

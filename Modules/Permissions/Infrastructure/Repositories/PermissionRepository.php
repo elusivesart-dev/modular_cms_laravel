@@ -8,6 +8,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Modules\Permissions\Domain\Contracts\PermissionRepositoryInterface;
 use Modules\Permissions\Domain\DTOs\PermissionData;
 use Modules\Permissions\Infrastructure\Models\Permission;
@@ -18,20 +19,37 @@ final class PermissionRepository implements PermissionRepositoryInterface
 {
     public function paginate(int $perPage = 15): LengthAwarePaginator
     {
-        return Permission::query()
+        $query = Permission::query()
             ->withCount('roles')
-            ->orderBy('name')
-            ->paginate($perPage);
+            ->orderBy('name');
+
+        if ($this->supportsTranslations()) {
+            $query->with(['translations']);
+        }
+
+        return $query->paginate($perPage);
     }
 
     public function findById(int $id): ?Permission
     {
-        return Permission::query()->find($id);
+        $query = Permission::query();
+
+        if ($this->supportsTranslations()) {
+            $query->with(['translations']);
+        }
+
+        return $query->find($id);
     }
 
     public function findByName(string $name): ?Permission
     {
-        return Permission::query()->where('name', $name)->first();
+        $query = Permission::query();
+
+        if ($this->supportsTranslations()) {
+            $query->with(['translations']);
+        }
+
+        return $query->where('name', $name)->first();
     }
 
     public function create(PermissionData $data): Permission
@@ -43,9 +61,12 @@ final class PermissionRepository implements PermissionRepositoryInterface
                 'description' => $data->description,
             ]);
 
+            $this->syncTranslations($permission, $data);
             $this->syncRoles($permission, $data->roleIds);
 
-            return $permission->refresh();
+            return $this->supportsTranslations()
+                ? $permission->fresh(['translations'])
+                : $permission->refresh();
         });
 
         $this->forgetPermissionCachesForRoleIds($data->roleIds);
@@ -67,9 +88,12 @@ final class PermissionRepository implements PermissionRepositoryInterface
                 'description' => $data->description,
             ]);
 
+            $this->syncTranslations($permission, $data);
             $this->syncRoles($permission, $data->roleIds);
 
-            return $permission->refresh();
+            return $this->supportsTranslations()
+                ? $permission->fresh(['translations'])
+                : $permission->refresh();
         });
 
         $affectedRoleIds = array_values(array_unique([
@@ -123,6 +147,34 @@ final class PermissionRepository implements PermissionRepositoryInterface
             ->get(['id', 'name', 'slug']);
     }
 
+    private function syncTranslations(Permission $permission, PermissionData $data): void
+    {
+        if (! $this->supportsTranslations()) {
+            return;
+        }
+
+        foreach ($data->getTranslations() as $locale => $translation) {
+            $label = $translation['label'] ?? null;
+            $description = $translation['description'] ?? null;
+
+            if ($label === null && $description === null) {
+                $permission->translations()
+                    ->where('locale', $locale)
+                    ->delete();
+
+                continue;
+            }
+
+            $permission->translations()->updateOrCreate(
+                ['locale' => $locale],
+                [
+                    'label' => $label ?? ($data->label ?? $permission->name),
+                    'description' => $description,
+                ],
+            );
+        }
+    }
+
     /**
      * @param array<int, int|string> $roleIds
      */
@@ -143,5 +195,10 @@ final class PermissionRepository implements PermissionRepositoryInterface
                 'rbac.permissions.' . md5($assignment->subject_type . ':' . (string) $assignment->subject_id)
             );
         }
+    }
+
+    private function supportsTranslations(): bool
+    {
+        return Schema::hasTable('permission_translations');
     }
 }

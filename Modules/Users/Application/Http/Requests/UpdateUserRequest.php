@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\Users\Application\Http\Requests;
 
+use App\Core\Media\Contracts\MediaAssetManagerInterface;
 use App\Core\RBAC\Contracts\RoleManagerInterface;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Modules\Media\Infrastructure\Models\Media;
+use Illuminate\Validation\Validator;
 use Modules\Users\Infrastructure\Models\User;
 
 final class UpdateUserRequest extends FormRequest
@@ -76,26 +77,35 @@ final class UpdateUserRequest extends FormRequest
         ];
     }
 
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $avatarMediaId = $this->input('avatar_media_id');
+
+            if ($avatarMediaId === null || $avatarMediaId === '') {
+                return;
+            }
+
+            $media = app(MediaAssetManagerInterface::class)->findById((int) $avatarMediaId);
+
+            if ($media === null || ! str_starts_with((string) $media->mimeType, 'image/')) {
+                $validator->errors()->add(
+                    'avatar_media_id',
+                    __('users::users.media.invalid_avatar_selection')
+                );
+            }
+        });
+    }
+
     public function validatedPayload(): array
     {
         $data = $this->validated();
 
         $data['is_active'] = (bool) ($data['is_active'] ?? false);
         $data['role_slugs'] = array_values(array_unique($data['role_slugs'] ?? []));
-        $data['avatar_media_id'] = isset($data['avatar_media_id']) ? (int) $data['avatar_media_id'] : null;
-
-        if (!empty($data['avatar_media_id'])) {
-            $media = Media::query()->find($data['avatar_media_id']);
-
-            if ($media === null || !str_starts_with((string) $media->mime_type, 'image/')) {
-                $this->failedValidation(
-                    validator([], [])->errors()->add(
-                        'avatar_media_id',
-                        __('users::users.media.invalid_avatar_selection')
-                    )
-                );
-            }
-        }
+        $data['avatar_media_id'] = isset($data['avatar_media_id']) && $data['avatar_media_id'] !== ''
+            ? (int) $data['avatar_media_id']
+            : null;
 
         if (empty($data['password'])) {
             unset($data['password']);

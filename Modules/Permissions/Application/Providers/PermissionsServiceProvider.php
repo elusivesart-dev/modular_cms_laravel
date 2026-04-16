@@ -7,6 +7,7 @@ namespace Modules\Permissions\Application\Providers;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Modules\Permissions\Application\Policies\PermissionPolicy;
+use Modules\Permissions\Application\Services\PermissionTranslationService;
 use Modules\Permissions\Domain\Contracts\PermissionRepositoryInterface;
 use Modules\Permissions\Infrastructure\Models\Permission;
 use Modules\Permissions\Infrastructure\Repositories\PermissionRepository;
@@ -21,6 +22,7 @@ final class PermissionsServiceProvider extends ServiceProvider
         );
 
         $this->app->bind(PermissionRepositoryInterface::class, PermissionRepository::class);
+        $this->app->singleton(PermissionTranslationService::class);
     }
 
     public function boot(): void

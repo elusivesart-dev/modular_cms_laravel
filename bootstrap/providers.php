@@ -3,16 +3,15 @@
 use App\Core\Events\Providers\EventServiceProvider as CoreEventServiceProvider;
 use App\Core\Infrastructure\CoreInfrastructureServiceProvider;
 use App\Core\Installer\Providers\InstallerServiceProvider;
+use App\Core\Localization\Providers\LocalizationServiceProvider;
 use App\Core\Modules\ModuleServiceProvider;
 use App\Core\RBAC\Providers\RBACServiceProvider;
 use App\Core\Security\Providers\SecurityServiceProvider;
 use App\Core\Themes\Providers\ThemeServiceProvider;
 use App\Providers\AppServiceProvider;
 use App\Providers\CoreServiceProvider;
-use App\Core\Localization\Providers\LocalizationServiceProvider;
 use Modules\Audit\Application\Providers\AuditServiceProvider;
-use Modules\Permissions\PermissionsServiceProvider;
-
+use Modules\Permissions\Application\Providers\PermissionsServiceProvider;
 
 return [
     AppServiceProvider::class,
@@ -26,5 +25,5 @@ return [
     InstallerServiceProvider::class,
     PermissionsServiceProvider::class,
     AuditServiceProvider::class,
-	LocalizationServiceProvider::class,
+    LocalizationServiceProvider::class,
 ];
